@@ -6,7 +6,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const REGION = "ap-northeast-1";
-const MODEL_ID = "anthropic.claude-haiku-4-5-20251001-v1:0"; // 東京 In-Region 直接
+const MODEL_ID = "jp.anthropic.claude-haiku-4-5-20251001-v1:0"; // 東京 In-Region 直接
 const IMAGE_DIR = "./images";
 const MAX_IMAGES = 5;
 
@@ -91,19 +91,19 @@ async function generateReport() {
     // 出力上限。§5 の「出力トークン上限 500以下」に合わせる。
     inferenceConfig: { maxTokens: 500, temperature: 0 },
     // Structured Outputs（JSON Schema 強制）: Converse は outputConfig.textFormat を使う。
-    outputConfig: {
-      textFormat: {
-        type: "json_schema",
-        structure: {
-          jsonSchema: {
-            // schema は「JSON文字列」で渡す（オブジェクトではなく stringify）
-            schema: JSON.stringify(reportSchema),
-            name: "genba_daily_report",
-            description: "建築現場の日報4項目（作業/進捗/安全/翌日）",
-          },
-        },
-      },
-    },
+    // outputConfig: {
+    //   textFormat: {
+    //     type: "json_schema",
+    //     structure: {
+    //       jsonSchema: {
+    //         // schema は「JSON文字列」で渡す（オブジェクトではなく stringify）
+    //         schema: JSON.stringify(reportSchema),
+    //         name: "genba_daily_report",
+    //         description: "建築現場の日報4項目（作業/進捗/安全/翌日）",
+    //       },
+    //     },
+    //   },
+    // },
   });
 
   const start = Date.now();
@@ -111,13 +111,13 @@ async function generateReport() {
   const elapsedMs = Date.now() - start;
 
   const text = res.output?.message?.content?.[0]?.text ?? "";
-  const parsed = JSON.parse(text); // Structured Outputs のためパース失敗しない想定
+  // const parsed = JSON.parse(text); // Structured Outputs のためパース失敗しない想定
   return {
     elapsedMs,
     latencyMsFromApi: res.metrics?.latencyMs, // API 実測レイテンシ
     usage: res.usage, // { inputTokens, outputTokens, totalTokens }
     stopReason: res.stopReason,
-    report: parsed,
+    report: text,
     imageCount: imageBlocks.length,
   };
 }
