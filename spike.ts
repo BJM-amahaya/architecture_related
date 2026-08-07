@@ -6,15 +6,22 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const REGION = "ap-northeast-1";
-const MODEL_ID = "jp.anthropic.claude-haiku-4-5-20251001-v1:0"; // 東京 In-Region 直接
+// 東京 In-Region の推論プロファイル。prefix 無しの素の modelId は
+// 「on-demand throughput isn't supported」で弾かれるため必須。
+const MODEL_ID = "jp.anthropic.claude-haiku-4-5-20251001-v1:0";
+
 const IMAGE_DIR = "./images";
 const MAX_IMAGES = 5;
+// 日報を返させるツール名。toolSpec と toolChoice で同じ値を使う必要がある。
+const TOOL_NAME = "genba_daily_report";
 
 const client = new BedrockRuntimeClient({ region: REGION });
 
 // 日報4項目の JSON Schema。`要確認` を許容する設計（事実性はスキーマでは保証されない＝プロンプトで担保）。
-// 注: Structured Outputs は JSON Schema Draft 2020-12 の「サブセット」のみ対応。
-//     minLength/maxLength・数値制約・recursive・additionalProperties!=false は使用不可（差異注記2参照）。
+// 注: JSON Schema Draft 2020-12 の「サブセット」のみ対応。
+//     minLength/maxLength・数値制約・recursive は使用不可（差異注記2参照）。
+// 注: このスキーマは toolConfig の inputSchema.json に「オブジェクトのまま」渡す。
+//     （outputConfig 方式と違い JSON.stringify しない）
 const reportSchema = {
   type: "object",
   properties: {
@@ -88,36 +95,55 @@ async function generateReport() {
         ],
       },
     ],
-    // 出力上限。§5 の「出力トークン上限 500以下」に合わせる。
-    inferenceConfig: { maxTokens: 500, temperature: 0 },
-    // Structured Outputs（JSON Schema 強制）: Converse は outputConfig.textFormat を使う。
-    // outputConfig: {
-    //   textFormat: {
-    //     type: "json_schema",
-    //     structure: {
-    //       jsonSchema: {
-    //         // schema は「JSON文字列」で渡す（オブジェクトではなく stringify）
-    //         schema: JSON.stringify(reportSchema),
-    //         name: "genba_daily_report",
-    //         description: "建築現場の日報4項目（作業/進捗/安全/翌日）",
-    //       },
-    //     },
-    //   },
-    // },
+    // 出力上限。ツール引数の JSON も出力トークンを消費するため 500 では不足する。
+    // 実測コスト（工程6）には usage.outputTokens の実値を使うので、上限緩和は許容。
+    inferenceConfig: { maxTokens: 1500, temperature: 0 },
+    // JSON Schema 強制。Bedrock の Claude Haiku 4.5 は outputConfig.textFormat
+    // （Structured Outputs）に非対応のため、Tool Use で代替する。
+    // toolChoice でこのツールを必ず呼ばせる＝必ずこのスキーマで返させる。
+    toolConfig: {
+      tools: [
+        {
+          toolSpec: {
+            name: TOOL_NAME,
+            description: "建築現場の日報4項目（作業/進捗/安全/翌日）",
+            // outputConfig と違い、スキーマはオブジェクトのまま渡す（stringify しない）
+            inputSchema: { json: reportSchema },
+            // 注: strict: true も Structured Outputs 系の機能で、Haiku 4.5 が
+            //     拒否する可能性がある。素の状態で疎通確認できてから追加すること。
+          },
+        },
+      ],
+      toolChoice: { tool: { name: TOOL_NAME } },
+    },
   });
 
   const start = Date.now();
   const res = await client.send(command);
   const elapsedMs = Date.now() - start;
 
-  const text = res.output?.message?.content?.[0]?.text ?? "";
-  // const parsed = JSON.parse(text); // Structured Outputs のためパース失敗しない想定
+  // Tool Use の結果は content の toolUse ブロックに入る。
+  // input は既にオブジェクトなので JSON.parse は不要。
+  const toolUse = res.output?.message?.content?.find(
+    (block) => block.toolUse?.name === TOOL_NAME,
+  )?.toolUse;
+
+  if (!toolUse?.input) {
+    // 黙って undefined を返すと「動いたが中身が空」を見逃すため、明示的に落とす。
+    // stopReason が max_tokens の場合はツール引数が途中で切れている。
+    throw new Error(
+      `ツール呼び出しの結果を取得できませんでした（stopReason: ${res.stopReason}）。` +
+        `content: ${JSON.stringify(res.output?.message?.content)}`,
+    );
+  }
+
+  const parsed = toolUse.input;
   return {
     elapsedMs,
     latencyMsFromApi: res.metrics?.latencyMs, // API 実測レイテンシ
     usage: res.usage, // { inputTokens, outputTokens, totalTokens }
     stopReason: res.stopReason,
-    report: text,
+    report: parsed,
     imageCount: imageBlocks.length,
   };
 }
