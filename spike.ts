@@ -10,7 +10,9 @@ const REGION = "ap-northeast-1";
 // 「on-demand throughput isn't supported」で弾かれるため必須。
 const MODEL_ID = "jp.anthropic.claude-haiku-4-5-20251001-v1:0";
 
-const IMAGE_DIR = "./images";
+// 既定は ./images（配筋写真）。回帰テストで無関係写真セットに切り替えるため環境変数で上書き可能。
+//   例: IMAGE_DIR=./images_irrelevant AWS_PROFILE=... npx tsx spike.ts
+const IMAGE_DIR = process.env.IMAGE_DIR ?? "./images";
 const MAX_IMAGES = 5;
 // 日報を返させるツール名。toolSpec と toolChoice で同じ値を使う必要がある。
 const TOOL_NAME = "genba_daily_report";
@@ -36,15 +38,27 @@ const reportSchema = {
     },
     safety_concern: {
       type: "object",
-      description: "安全・懸念。確認できた事項と未確認事項を分離。『問題なし』は生成しない。",
+      // 分割の軸は「確認できた／未確認」であって「良い／悪い」ではない。
+      // ここを曖昧にすると confirmed が「安全対策（良い点）」だけの欄と解釈され、
+      // 画角内に写っている危険を取りこぼす（＝proposal §2「安全上の懸念の見落とし」が未解決になる）。
+      description:
+        "安全・懸念。分割の軸は『画像内で確認できた／画角外で未確認』であり、" +
+        "『良い点／悪い点』ではない。対策も危険も、見えていれば confirmed に入れる。" +
+        "『問題なし』は生成しない。",
       properties: {
         confirmed: {
           type: "string",
-          description: "画像内で確認できた安全上の事項。無ければ『該当なし（確認範囲内）』。",
+          description:
+            "画像内で確認できた安全上の事項。" +
+            "実施されている対策（できている点）と、見えている危険・懸念（できていない点）の両方を含める。" +
+            "危険が写っている場合は必ず記載する。" +
+            "どちらも見当たらなければ『該当なし（確認範囲内）』。",
         },
         unconfirmed: {
           type: "string",
-          description: "画角外・未確認のため要確認の事項（例：安全帯着用状況は写真外のため要確認）。",
+          description:
+            "画角外・不鮮明で判断できない事項のみ（例：安全帯着用状況は写真外のため要確認）。" +
+            "画角内に写っている作業員や設備を『未確認』としてはならない。",
         },
       },
       required: ["confirmed", "unconfirmed"],
@@ -64,17 +78,25 @@ function loadImages() {
     .filter((f) => /\.(jpe?g)$/i.test(f))
     .sort()
     .slice(0, MAX_IMAGES);
-  // Converse の画像ブロック: { image: { format, source: { bytes: Uint8Array } } }
-  return files.map((f) => ({
-    image: {
-      format: "jpeg" as const,
-      source: { bytes: new Uint8Array(readFileSync(join(IMAGE_DIR, f))) },
+  // Converse の画像ブロックには番号が無い。番号を添えて根拠を書かせるには、
+  // 各画像の直前にラベルの text ブロックを挟んで明示的に対応付ける必要がある。
+  // （これをしないと、モデルは存在しない「写真6」を引用するなど番号ごと捏造する）
+  // 画像ブロック: { image: { format, source: { bytes: Uint8Array } } }
+  return files.flatMap((f, i) => [
+    { text: `写真${i + 1}:` },
+    {
+      image: {
+        format: "jpeg" as const,
+        source: { bytes: new Uint8Array(readFileSync(join(IMAGE_DIR, f))) },
+      },
     },
-  }));
+  ]);
 }
 
 async function generateReport() {
   const imageBlocks = loadImages();
+  // ラベルの text ブロックが混ざるので、枚数は image ブロックだけを数える。
+  const imageCount = imageBlocks.filter((b) => "image" in b).length;
 
   const command = new ConverseCommand({
     modelId: MODEL_ID,
@@ -87,7 +109,19 @@ async function generateReport() {
               "あなたは建築現場の日報作成を補助するアシスタントです。" +
               "以下の写真と当日メモ・翌日予定から、日報4項目を日本語で作成してください。" +
               "写真から確認できない事項（工種・数量・翌日工程・口頭指示など）は推測で埋めず『要確認』としてください。" +
-              "安全項目は『画像内で確認できた事項』と『画角外・未確認』を必ず分離し、『問題なし』とは書かないでください。\n" +
+              "安全項目は『画像内で確認できた事項』と『画角外・未確認』を必ず分離し、『問題なし』とは書かないでください。" +
+              // ここから安全項目の追加指示。良い点だけ拾って危険を落とす失敗と、
+              // その反動で危険を捏造する失敗の両方を同時に抑える。
+              "確認できた事項には、実施されている対策だけでなく、画角内に見えている危険も必ず含めてください。" +
+              // 「推測で埋めるな」と衝突してモデルが断定を避け、危険を『不明確』とぼかす／
+              // 画角内の対象を『画角外』に逃がす挙動が出たため、両者の境界を明示する。
+              "写っている人物が保護具（ヘルメット・安全帯・安全靴）を着けていないと見て取れる場合、" +
+              "それは推測ではなく観察事実です。ぼかさず『未着用』と書いてください。" +
+              "『画角外』と書いてよいのは、その対象が写真に写っていない場合だけです。" +
+              "一方、写真に写っていない危険を想像で書くことは誤りです。" +
+              // proposal §3: 作業員数は写真から確定できない項目。実際に人数を数え違えたため明示的に禁止する。
+              "また作業員の人数は写真から確定できないため、『3名』のように断定せず『作業員』と書いてください。" +
+              "根拠となる写真の番号（例：写真1）を添え、各欄は箇条書き6項目以内で簡潔に書いてください。\n" +
               "【現場】〇〇マンション新築工事 / 【日付】2026-07-06 / 【工種】鉄筋 / " +
               "【当日メモ】2F床スラブの配筋作業を実施。 / 【翌日予定】型枠建て込み、生コン打設の段取り。",
           },
@@ -144,7 +178,7 @@ async function generateReport() {
     usage: res.usage, // { inputTokens, outputTokens, totalTokens }
     stopReason: res.stopReason,
     report: parsed,
-    imageCount: imageBlocks.length,
+    imageCount,
   };
 }
 
