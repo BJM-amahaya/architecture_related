@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>00 全体概要・共通規約（GenbaLog 実装手順書）</title>
+<style>
+  :root {
+    --bg: #000000;
+    --card: #121212;
+    --ink: #e5e7eb;
+    --muted: #9ca3af;
+    --accent: #3b82f6;
+    --accent-light: #1b2a44;
+    --green: #34d399;
+    --green-light: #10291f;
+    --amber: #fbbf24;
+    --amber-light: #2b2211;
+    --red: #f87171;
+    --red-light: #2c1717;
+    --purple: #a78bfa;
+    --purple-light: #221d38;
+    --border: #2f2f2f;
+    --code-bg: #1c1c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  .container { max-width: 1000px; margin: 0 auto; padding: 24px 20px 80px; }
+  header.hero {
+    background: linear-gradient(135deg, #0b1220, #16233d);
+    color: #fff;
+    border-radius: 14px;
+    padding: 32px 36px;
+    margin-bottom: 32px;
+  }
+  header.hero h1 { margin: 0 0 10px; font-size: 26px; }
+  header.hero p { margin: 4px 0; opacity: .92; }
+  header.hero .tags { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  header.hero .tag {
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 999px;
+    padding: 3px 12px;
+    font-size: 12.5px;
+  }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 26px 30px;
+    margin-bottom: 26px;
+  }
+  h2 {
+    font-size: 20px;
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent-light);
+  }
+  h2 .num {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 8px;
+    padding: 1px 10px;
+    font-size: 15px;
+    margin-right: 10px;
+  }
+  h3 { font-size: 16px; margin: 22px 0 10px; color: #93c5fd; }
+  code {
+    background: var(--code-bg);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    word-break: break-all;
+  }
+  pre {
+    background: #0d0d0d;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--accent-light); color: #93c5fd; white-space: nowrap; }
+  tr:nth-child(even) td { background: #181818; }
+  .table-wrap { overflow-x: auto; }
+  .note {
+    background: var(--amber-light);
+    border-left: 4px solid var(--amber);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+  .note strong:first-child { color: var(--amber); }
+  .callout {
+    background: var(--red-light);
+    border-left: 4px solid var(--red);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  .ok-note {
+    background: var(--green-light);
+    border-left: 4px solid var(--green);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+  .ok-note strong:first-child { color: var(--green); }
+  .step-h {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0 8px;
+  }
+  .step-h .step-badge {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    width: 26px; height: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-h b { font-size: 15px; color: #93c5fd; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+
+  /* ===== 読み進めフロー図 ===== */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 20px 0;
+  }
+  .flow-step {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .flow-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 44px;
+    flex-shrink: 0;
+  }
+  .flow-dot {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 15px;
+    flex-shrink: 0;
+  }
+  .flow-line { width: 3px; flex-grow: 1; background: var(--border); min-height: 14px; }
+  .flow-body {
+    padding: 4px 0 22px;
+    flex-grow: 1;
+  }
+  .flow-body b { font-size: 15px; }
+  .flow-body .desc { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+  .c-blue { background: var(--accent); }
+  .c-red  { background: var(--red); }
+  .c-green{ background: var(--green); }
+  .c-purple{ background: var(--purple); }
+
+  /* ===== 分岐図（同期/非同期） ===== */
+  .branch {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .branch-box {
+    flex: 1 1 300px;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13.5px;
+  }
+  .branch-box.ok  { background: var(--green-light); border: 2px solid var(--green); }
+  .branch-box.ng  { background: var(--amber-light); border: 2px solid var(--amber); }
+  .branch-box b { display: block; margin-bottom: 6px; font-size: 14.5px; }
+  .branch-box.ok b { color: var(--green); }
+  .branch-box.ng b { color: var(--amber); }
+
+  /* ===== アーキテクチャ図 ===== */
+  .arch { margin: 20px 0; }
+  .arch-node {
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin: 0 auto;
+    text-align: center;
+    max-width: 620px;
+  }
+  .arch-node b { display: block; font-size: 15px; }
+  .arch-node .sub { font-size: 12.5px; color: var(--muted); }
+  .arch-phone { background: var(--purple-light); border: 2px solid var(--purple); }
+  .arch-phone b { color: var(--purple); }
+  .arch-bedrock { background: var(--green-light); border: 2px solid var(--green); }
+  .arch-bedrock b { color: var(--green); }
+  .arch-arrow {
+    text-align: center;
+    font-size: 20px;
+    color: var(--muted);
+    line-height: 1.2;
+    margin: 4px 0;
+  }
+  .arch-arrow .lbl { font-size: 12px; display: block; }
+  .arch-backend {
+    border: 2px solid var(--accent);
+    background: #101826;
+    border-radius: 12px;
+    padding: 16px 18px 18px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .arch-backend > b {
+    display: block; text-align: center; color: var(--accent);
+    font-size: 15px; margin-bottom: 12px;
+  }
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .arch-cell {
+    background: #141414;
+    border: 1px solid #2b3f5e;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+  }
+  .arch-cell b { display: block; color: #93c5fd; font-size: 13.5px; margin-bottom: 2px; }
+  .arch-lambda {
+    background: #141414;
+    border: 1px solid #2b3f5e;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    margin-top: 10px;
+  }
+  .arch-lambda b { color: #93c5fd; }
+  .arch-lambda ol { margin: 6px 0 0; padding-left: 20px; }
+
+  /* ===== ゲート進行図 ===== */
+  .gates {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 20px 0;
+  }
+  .gate {
+    flex: 1 1 190px;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 12.5px;
+    position: relative;
+    margin-right: 26px;
+  }
+  .gate:last-child { margin-right: 0; }
+  .gate::after {
+    content: "▶";
+    position: absolute;
+    right: -21px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .gate:last-child::after { content: ""; }
+  .gate .g-name { font-size: 17px; font-weight: 700; display: block; }
+  .gate .g-sub { display: block; font-weight: 600; margin-bottom: 6px; }
+  .g1 { background: var(--accent-light); border: 2px solid var(--accent); }
+  .g1 .g-name { color: var(--accent); }
+  .g2 { background: var(--purple-light); border: 2px solid var(--purple); }
+  .g2 .g-name { color: var(--purple); }
+  .g3 { background: var(--amber-light); border: 2px solid var(--amber); }
+  .g3 .g-name { color: var(--amber); }
+  .g4 { background: var(--green-light); border: 2px solid var(--green); }
+  .g4 .g-name { color: var(--green); }
+
+  /* ===== チェックリスト ===== */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li {
+    padding: 8px 12px 8px 40px;
+    position: relative;
+    border-bottom: 1px dashed var(--border);
+  }
+  .checklist li::before {
+    content: "☐";
+    position: absolute;
+    left: 10px;
+    color: var(--accent);
+    font-size: 18px;
+    top: 6px;
+  }
+  .badge {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 1px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .badge.red { background: var(--red-light); color: var(--red); }
+  .badge.green { background: var(--green-light); color: var(--green); }
+  .badge.blue { background: var(--accent-light); color: var(--accent); }
+  footer { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 30px; }
+  @media print {
+    body { background: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    section { break-inside: avoid; border: 1px solid #444; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="hero">
+  <h1>00 全体概要・共通規約</h1>
+  <p>現場AI日報「GenbaLog」PoC 実装手順書シリーズの入口。まず本ページで環境・共通規約・ゲート対応を把握してから各工程ファイルに進む。</p>
+  <p style="font-size:13px; margin-top:10px;">
+    上位資料：<code style="background:rgba(255,255,255,.15); color:#fff;">spec/plan7/proposal.md</code>（提案書、「§N」はこの§を指す）／
+    <code style="background:rgba(255,255,255,.15); color:#fff;">spec/plan7/process.md</code>（A→A+→S 評価ゲートの正本。<b>v2</b>：S は S-tech／S-accept に分離）
+  </p>
+  <div class="tags">
+    <span class="tag">Amplify Gen2 + CDK</span>
+    <span class="tag">Amazon Bedrock（Claude Haiku 4.5）</span>
+    <span class="tag">東京 In-Region 直接</span>
+    <span class="tag">React Native (Expo)</span>
+    <span class="tag">2026-07-10 チーム決定（proposal §4）</span>
+  </div>
+</header>
+
+<!-- ============ 目的・前提 ============ -->
+<section>
+  <h2><span class="num">◎</span>目的・前提（依存する工程）</h2>
+  <ul>
+    <li><b>目的</b>：以降の全工程ファイルが従う「環境前提・共通規約・アーキテクチャ・ゲート対応・コスト前提」を一元化する。</li>
+    <li><b>前提</b>：本ファイルに依存工程はない（シリーズの起点）。各工程ファイルは本ファイルの共通規約を前提とする。</li>
+  </ul>
+  <div class="callout">
+    <b>最優先ゲート</b>：<b>工程0（技術スパイク）が実装初日の最優先ゲート</b>。同期／非同期方式の確定前に UI 実装へ進まない（§9）。
+  </div>
+</section>
+
+<!-- ============ 1. 構成と読み進め方 ============ -->
+<section>
+  <h2><span class="num">1</span>手順書全体の構成と読み進め方</h2>
+  <p>以下9ファイルを<b>番号順に読む</b>。ただし着手は工程0を最優先し、その判定結果で工程2以降の実装方式が変わる。</p>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>順</th><th>ファイル</th><th>対応工程（§9）</th><th>概要</th></tr>
+    <tr><td>0</td><td><code>00_overview.md</code>（本ファイル）</td><td>全体</td><td>環境前提・共通規約・アーキ・ゲート対応・コスト前提</td></tr>
+    <tr><td>1</td><td><code>01_step0_spike.md</code></td><td>工程0 <span class="badge red">最優先ゲート</span></td><td>Bedrock 疎通・Structured Outputs・画像入力・初回コンパイル実測＋定常 P95 計測。<b>同期/非同期を確定</b></td></tr>
+    <tr><td>2</td><td><code>02_step1_data.md</code></td><td>工程1</td><td><code>defineAuth</code>/<code>defineData</code>/<code>defineStorage</code>。<code>allow.owner()</code>・S3 本人分離・Block Public Access</td></tr>
+    <tr><td>3</td><td><code>03_step2_ai.md</code></td><td>工程2（同期方式）</td><td>custom query <code>generateReport</code>・IDOR 再検証・冪等キー（lease 状態機械）・quota・Structured Outputs・ウォームアップ</td></tr>
+    <tr><td>3b</td><td><code>03b_step2_async.md</code></td><td>工程2（非同期方式）</td><td>工程0で非同期判定となった場合の完全手順（受付＋SQS＋worker＋ポーリング）</td></tr>
+    <tr><td>4</td><td><code>04_step3_ui.md</code></td><td>工程3</td><td>撮影＋最小テキスト入力 → 生成 → 確認・微修正 → 確定 → 一覧・PDF（Expo / expo-print）</td></tr>
+    <tr><td>5</td><td><code>05_step4_quality.md</code></td><td>工程4</td><td>S-tech 前の最小品質スモーク＋固定評価セットで充足率・事実誤認率・要確認率・修正文字率・時間短縮率を測定</td></tr>
+    <tr><td>6</td><td><code>06_step5_error.md</code></td><td>工程5</td><td>認可違反否定テスト・throttle/timeout・再試行回復（FAILED/lease）・重複クリック・入力変更再生成・弱回線の異常系</td></tr>
+    <tr><td>7</td><td><code>07_step6_cost.md</code></td><td>工程6</td><td>実測 usage トークンで §5 概算式・月額表を更新。任意でモデルA/B</td></tr>
+  </table>
+  </div>
+
+  <h3>読み進め方の原則（フロー図）</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-rail"><div class="flow-dot c-blue">1</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <b>本ファイル（00）で環境・規約を整える</b>
+        <div class="desc">Node/AWS CLI/Bedrock モデルアクセス・共通規約の確認</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-rail"><div class="flow-dot c-red">2</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <b>工程0（技術スパイク）で同期／非同期を確定</b>
+        <div class="desc"><code>01_step0_spike.md</code> を実施し、下記の分岐判定を行う（§9 工程0）</div>
+        <div class="branch">
+          <div class="branch-box ok">
+            <b>✅ 同期継続</b>
+            初回コンパイルの実測最大値 &lt; 25秒、<u>または</u>ウォームアップで初回を利用者経路から確実に除外できる（かつ定常 P95 に十分な余裕）<br>
+            → 工程2は <code>03_step2_ai.md</code>
+          </div>
+          <div class="branch-box ng">
+            <b>⚠ 非同期化</b>
+            上記を満たせない場合<br>
+            → 工程2は <code>03b_step2_async.md</code>（受付＋SQS＋worker＋ポーリング）を手順書とする
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-rail"><div class="flow-dot c-blue">3</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <b>確定した方式を前提に工程1→2→3 を実装（A→A+）</b>
+        <div class="desc">データ基盤 → AI生成 → UI の順に一気通貫を作る</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-rail"><div class="flow-dot c-green">4</div></div>
+      <div class="flow-body">
+        <b>工程4（最小スモーク＋KPI）・5・6 ＋ EAS 内部配布／通しデモ</b>
+        <div class="desc">品質・安全・コストを固め、S-tech → S-accept 評価へ</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. 前提環境 ============ -->
+<section>
+  <h2><span class="num">2</span>前提環境</h2>
+
+  <div class="callout" style="background:var(--accent-light); border-left-color:var(--accent);">
+    <b>🔰 このセクションのゴール（初学者向け）</b><br>
+    §2 が終わると、次の <b>3つ</b>が手元の Mac で揃った状態になります。ここが工程0以降のスタートラインです。
+    <ol style="margin:8px 0 0;">
+      <li><code>node -v</code> でバージョンが表示される（開発ツールが入った）</li>
+      <li><code>aws sts get-caller-identity</code> で自分のアカウント情報が返る（AWS 認証が通った）</li>
+      <li>東京リージョンで Claude Haiku 4.5 を <b>実際に呼べる</b>（初回呼び出しで自動有効化。事前の有効化操作は不要）</li>
+    </ol>
+    <div style="margin-top:8px;">以下は <b>Mac（macOS）</b> 前提。コマンドは上から順にターミナルへ貼り付けて実行し、各手順の「<b>✅ こう表示されればOK</b>」を確認しながら進めます。</div>
+  </div>
+
+  <h3>2.1 開発ツールを入れる（Mac）</h3>
+  <p>必要なツールと最低バージョン（AWS 公式 Amplify Gen2 の前提要件）：</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>要件</th><th>確認コマンド</th></tr>
+    <tr><td>Node.js</td><td><b>v18.16.0 以降</b>（LTS の 20 以降を推奨）</td><td><code>node -v</code></td></tr>
+    <tr><td>npm</td><td><b>v6.14.4 以降</b></td><td><code>npm -v</code></td></tr>
+    <tr><td>git</td><td><b>v2.14.1 以降</b></td><td><code>git --version</code></td></tr>
+  </table>
+  </div>
+
+  <div class="step-h"><span class="step-badge">1</span><b>ターミナルを開く</b></div>
+  <p><code>⌘（command）＋ space</code> で Spotlight を開き、<code>ターミナル</code>（Terminal）と入力して Enter。文字入力画面が出ればOK。以降のコマンドはここに貼り付けます。</p>
+
+  <div class="step-h"><span class="step-badge">2</span><b>Homebrew（Mac 用のソフト管理ツール）を入れる</b></div>
+  <p>まず入っているか確認します。</p>
+<pre><code># 実行環境：ローカルシェル（Mac のターミナル）
+brew -v</code></pre>
+  <div class="ok-note">
+    <strong>✅ こう表示されればOK</strong>：<code>Homebrew 4.x.x</code> のようにバージョンが出る（＝すでに入っている。手順3へ）。<br>
+    ❌ <code>command not found: brew</code> と出たら未導入。下記の<b>公式1行コマンド</b>で入れます。
+  </div>
+<pre><code># 実行環境：ローカルシェル（Mac のターミナル）／Homebrew 公式インストールコマンド
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code></pre>
+  <div class="note">
+    <strong>⚠ 導入前の注意</strong>：これは Mac に新しいツールを入れる操作です。管理者パスワードを求められる場合があります。<b>内容を理解した上で</b>実行してください（不安ならチームに確認）。インストール後、画面末尾「Next steps」に <code>PATH</code> 追記コマンドがあれば、その指示にも従います。
+  </div>
+
+  <div class="step-h"><span class="step-badge">3</span><b>Node.js を入れる</b></div>
+  <p>Homebrew で入れます（最新の Node.js が入り、要件の v18.16 以上を満たします）。</p>
+<pre><code># 実行環境：ローカルシェル（Mac のターミナル）
+brew install node
+node -v
+npm -v</code></pre>
+  <div class="ok-note">
+    <strong>✅ こう表示されればOK</strong>：<code>node -v</code> が <b>v20.x.x 以上</b>（例：<code>v24.14.0</code>）、<code>npm -v</code> が数字（例：<code>11.9.0</code>）を返す。数字の頭が <b>18.16 以上</b>なら合格です。
+  </div>
+  <div class="note">
+    <strong>⚠ 補足（バージョンを切り替えたい人向け）</strong>：複数の Node バージョンを使い分けたい場合は <code>nvm</code>（<code>brew install nvm</code>）を使い、<code>nvm install 20</code> → <code>nvm use 20</code> で 20 LTS に固定できます。導入後は brew が出す <code>~/.zshrc</code> への追記指示に従ってください。<b>必須ではありません</b>（<code>brew install node</code> だけで OK）。
+  </div>
+
+  <div class="step-h"><span class="step-badge">4</span><b>git を確認する</b></div>
+  <p>Mac には最初から git が入っていることが多いです。</p>
+<pre><code># 実行環境：ローカルシェル（Mac のターミナル）
+git --version</code></pre>
+  <div class="ok-note">
+    <strong>✅ こう表示されればOK</strong>：<code>git version 2.x.x</code>（例：<code>git version 2.50.1</code>）が出る。「開発者ツールを入れますか」のポップアップが出たら、従って Xcode Command Line Tools を入れれば git も入ります。
+  </div>
+
+  <div class="note" style="background:#1b1a33; border-left-color:var(--purple);">
+    <strong style="color:var(--purple);">📌 Amplify で使うコマンド</strong>（この時点では覚えるだけでOK）：バックエンド作成 <code>npm create amplify@latest</code>（工程1）／個人サンドボックス起動 <code>npx ampx sandbox</code>（Gen2 CLI は <code>ampx</code>。旧 <code>amplify</code> CLI ではない）。チーム各自が独立した sandbox で A→A+ を取る運用（§process.md-4）。
+  </div>
+  <div class="note">
+    <strong>⚠ 差異注記（Node バージョン）</strong>：公式 Amplify Gen2「Set up AI」ページの最小要件は <b>Node.js v18.16.0 以降</b>。ただし関連ツール（例：AWS Blocks）は Node.js 22 以降を要求するため、将来の拡張を見据えるなら <b>Node 20 LTS 以降</b>で統一するのが無難。proposal.md には Node バージョンの明記がないため差異ではなく補足として記載。
+  </div>
+
+  <h3>2.2 AWS アカウントと認証（aws configure）</h3>
+  <p>Amplify や Bedrock を動かすには、ターミナルから AWS を操作する「鍵」を設定します。</p>
+
+  <div class="step-h"><span class="step-badge">1</span><b>AWS CLI（AWS 操作ツール）を入れる</b></div>
+  <p>Mac 公式の pkg で入れるのが確実です（AWS 公式手順）。</p>
+<pre><code># 実行環境：ローカルシェル（Mac のターミナル）／AWS 公式インストーラ
+curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+sudo installer -pkg ./AWSCLIV2.pkg -target /
+aws --version</code></pre>
+  <div class="ok-note">
+    <strong>✅ こう表示されればOK</strong>：<code>aws-cli/2.x.x Python/3.x.x Darwin/xx.x.x</code> のように <b>aws-cli/2</b>（バージョン2系）が出る。<br>
+    ※ <code>sudo</code> で Mac のログインパスワードを聞かれます（画面には表示されませんがそのまま入力→Enter）。ブラウザで <code>https://awscli.amazonaws.com/AWSCLIV2.pkg</code> を開いてダブルクリック導入でも可。
+  </div>
+
+  <div class="step-h"><span class="step-badge">2</span><b>アクセスキーを用意する</b></div>
+  <p>AWS コンソールにログイン → <b>IAM</b> → 対象ユーザー → <b>セキュリティ認証情報</b> タブ → 「<b>アクセスキーを作成</b>」で、<code>アクセスキー ID</code> と <code>シークレットアクセスキー</code> を控えます。</p>
+  <div class="callout">
+    <strong>⚠ セキュリティ注意（重要）</strong>：シークレットアクセスキーは<b>パスワードと同じ</b>です。<b>Git にコミットしない・チャットに貼らない・他人に渡さない</b>。より安全な方法として、会社で <b>IAM Identity Center（SSO）</b> が用意されている場合は、アクセスキーの代わりに <code>aws configure sso</code> を使ってください（キーを PC に残さずに済みます）。どちらを使うかはチーム方針に合わせます。
+  </div>
+
+  <div class="step-h"><span class="step-badge">3</span><b><code>aws configure</code> で鍵とリージョンを設定する</b></div>
+<pre><code># 実行環境：ローカルシェル（Mac のターミナル）
+aws configure</code></pre>
+  <p>対話式に4つ聞かれます。次のように入力します（<b>リージョンは東京 <code>ap-northeast-1</code> を必ず指定</b>）。</p>
+<pre><code>AWS Access Key ID [None]:     ← 手順2のアクセスキー ID を貼り付け
+AWS Secret Access Key [None]: ← 手順2のシークレットキーを貼り付け（画面には出ません）
+Default region name [None]:   ap-northeast-1
+Default output format [None]: json</code></pre>
+
+  <div class="step-h"><span class="step-badge">4</span><b>設定できたか確認する</b></div>
+<pre><code># 実行環境：ローカルシェル（Mac のターミナル）
+aws configure get region
+aws sts get-caller-identity</code></pre>
+  <div class="ok-note">
+    <strong>✅ こう表示されればOK</strong>：
+    <ul style="margin:6px 0 0;">
+      <li><code>aws configure get region</code> が <b><code>ap-northeast-1</code></b> を返す。</li>
+      <li><code>aws sts get-caller-identity</code> が <code>UserId</code> / <code>Account</code>（12桁の数字）/ <code>Arn</code> を含む JSON を返す（＝認証成功）。</li>
+    </ul>
+    ❌ <code>Unable to locate credentials</code> や <code>InvalidClientTokenId</code> が出たら鍵の貼り間違い。もう一度 <code>aws configure</code> をやり直します。
+  </div>
+  <ul>
+    <li>Amplify sandbox・Bedrock 呼び出しは、この認証情報で実行されます。</li>
+    <li>なぜ東京固定か → 本 PoC はリージョンを東京にそろえる方針だからです（理由は §2.4）。</li>
+  </ul>
+
+  <h3>2.3 Bedrock モデルアクセス（自動有効化・確認方法）</h3>
+  <div class="callout" style="background:var(--accent-light); border-left-color:var(--accent);">
+    <b>🔰 仕様が変わりました（重要）</b><br>
+    以前は Bedrock コンソールの「<b>Model access</b>（モデルアクセス）」ページで、モデルを1つずつ手動で有効化する必要がありました。<b>このページは廃止</b>され、いまはサーバーレス基盤モデル（Claude など）を<b>初めて呼び出した瞬間に、そのリージョンで自動的に有効化</b>されます。つまり「使う前にボタンを押して有効化する」作業は<b>もう不要</b>です。
+  </div>
+  <ul>
+    <li><b>有効化はリージョン単位</b>（東京で自動有効化されても他リージョンには波及しない）。本 PoC は<b>東京 <code>ap-northeast-1</code> に固定</b>なので、呼び出しも東京で行います（§2.2 で既定リージョンを東京にしてあること）。</li>
+    <li><b>事前の有効化操作は不要</b>。工程0（<code>01_step0_spike.md</code>）で実際に Bedrock を呼び出せば、その時に有効化されます。</li>
+    <li><b>Anthropic（Claude）は初回利用時のみ、用途（ユースケース）の入力を求められることがあります</b>。求められたら画面の指示に従って入力してください（提出するまで呼び出しはブロックされます）。</li>
+  </ul>
+  <p>確認は「<b>実際に呼べるか</b>」で行います。まず CLI で東京に当該モデルが見えるか一次チェックします。</p>
+  <pre><code># 実行環境：ローカルシェル（Mac のターミナル）／東京にモデルが見えるか確認
+aws bedrock list-foundation-models \
+  --region ap-northeast-1 \
+  --query "modelSummaries[?contains(modelId, 'claude-haiku-4-5')].modelId"</code></pre>
+  <div class="ok-note">
+    <strong>✅ こう表示されればOK</strong>：<code>"anthropic.claude-haiku-4-5-20251001-v1:0"</code> を含むリストが返る（＝東京でモデルが見えている）。<b>最終確認は工程0（<code>01_step0_spike.md</code>）の疎通テストで Converse／InvokeModel が成功すること</b>。ここが旧「緑バッジ」の代わりの合格判定です。
+  </div>
+  <div class="note">
+    <strong>⚠ 呼び出しで <code>AccessDeniedException</code> が出る場合</strong>：①初回の用途入力が未提出、②<b>会社の管理者が IAM ポリシー／SCP でモデルを制限</b>している、③リージョン取り違え、のいずれか。ページ末尾「失敗時の代替」も参照。
+  </div>
+
+  <h3>2.4 リージョン・モデル（本 PoC 固定値）</h3>
+  <p>以下は<b>この PoC で必ずこの値を使う</b>固定値です（勝手に変えない）。</p>
+  <ul>
+    <li>リージョン：<b><code>ap-northeast-1</code>（東京）</b>。処理地域も東京。→ 遅延を抑え、データの処理場所を東京にそろえるため。</li>
+    <li>呼び出し方式：<b>東京 In-Region 直接呼び出し</b>。</li>
+    <li>モデルID：<b><code>anthropic.claude-haiku-4-5-20251001-v1:0</code></b>（この表記以外を使わない）。</li>
+  </ul>
+  <div class="note">
+    <strong>裏取り（AWS 公式 Claude Haiku 4.5 モデルカード）</strong>：<code>ap-northeast-1</code>（東京）は <b>In-Region ✅ / Geo ✅ / Global ✅</b> に対応。基盤モデルID は <code>anthropic.claude-haiku-4-5-20251001-v1:0</code>。<code>bedrock-runtime</code> エンドポイントで <b>Converse / Invoke / Messages</b> と<b>画像入力</b>をサポート。国内高可用性を後日優先する場合の日本 Geo 推論プロファイルは <code>jp.anthropic.claude-haiku-4-5-20251001-v1:0</code>（§6 の切替オプション）。<b>大阪（ap-northeast-3）は In-Region 非対応（Geo は対応）</b>のため、In-Region 直接は東京固定とする。
+  </div>
+
+  <h3>✅ §2 の自己チェック（3点そろえば §2 完了）</h3>
+  <ul class="checklist">
+    <li><code>node -v</code> でバージョンが表示される（<code>npm -v</code> / <code>git --version</code> も出る）</li>
+    <li><code>aws sts get-caller-identity</code> が自分のアカウント情報（JSON）を返す</li>
+    <li>東京リージョンで Claude Haiku 4.5 を<b>実際に呼び出して成功</b>（工程0の疎通テスト。初回自動有効化）</li>
+  </ul>
+</section>
+
+<!-- ============ 3. 共通規約 ============ -->
+<section>
+  <h2><span class="num">3</span>共通規約（全工程が従う）</h2>
+  <div class="callout" style="background:var(--accent-light); border-left-color:var(--accent);">
+    <b>🔰 このセクションのゴール（初学者向け）</b><br>
+    §3 は「全工程が必ず守る共通ルール集」です。ここで決めた<b>モデル・ファイルの置き場所・データ名・二重生成の防ぎ方・ログの書き方</b>を全工程で使い回します。<b>細部は各工程で読み返せばOK</b>。まずは「こういうルールがある」という地図として眺めてください。以下の各節は「何のためのルールか」を 🔰 で先に一言添えています。
+  </div>
+  <p>以降のすべての手順書は次を厳守する。</p>
+
+  <h3>3.1 Bedrock</h3>
+  <div class="note" style="background:var(--accent-light); border-left-color:var(--accent);">🔰 この節は「<b>AI（Claude）をどう呼ぶか</b>」の固定ルール。モデル・地域・呼び出し方式・権限を全工程でそろえる。</div>
+  <ul>
+    <li>モデルID：<code>anthropic.claude-haiku-4-5-20251001-v1:0</code></li>
+    <li>リージョン：<code>ap-northeast-1</code>（東京 In-Region 直接呼び出し）</li>
+    <li>API：<b>Converse または InvokeModel に固定</b>（Structured Outputs〔＝AI の返答を決まった JSON の形に強制する機能〕を使うため。Anthropic Messages 互換経路では Structured Outputs 不可 ※proposal §6・§7 の前提。工程0で実挙動を確認）</li>
+    <li>IAM〔＝AWS の権限設定〕：当該 foundation-model ARN への <code>bedrock:InvokeModel</code> を付与（クロスリージョン推論プロファイル ARN 許可は In-Region 構成では不要）</li>
+  </ul>
+
+  <h3>3.2 Amplify Gen2 パス規約（新規/編集ファイルの固定位置）</h3>
+  <div class="note" style="background:var(--accent-light); border-left-color:var(--accent);">🔰 この節は「<b>どのファイルをどこに置くか</b>」の地図。全員が同じ場所に書けば、レビューも引き継ぎも迷わない。</div>
+  <pre><code>amplify/auth/resource.ts                       # defineAuth（Cognito・メールログイン）
+amplify/data/resource.ts                       # defineData（Site/Report/Photo・allow.owner()・custom query）
+amplify/storage/resource.ts                    # defineStorage（media/{entity_id}/*）
+amplify/functions/generate-report/resource.ts  # defineFunction（generateReport）
+amplify/functions/generate-report/handler.ts   # Lambda 実装（Bedrock 呼び出し・IDOR 再検証）
+amplify/backend.ts                             # backend 統合・CDK で IAM 付与（bedrock:InvokeModel / S3 read）</code></pre>
+
+  <h3>3.3 データモデル・ストレージ・認可</h3>
+  <div class="note" style="background:var(--accent-light); border-left-color:var(--accent);">🔰 この節は「<b>誰が自分のデータだけを触れるようにするか</b>」のルール。基本は「作った本人だけが読み書きできる」。</div>
+  <ul>
+    <li>モデル：<b><code>Site</code>（現場）/ <code>Report</code>（日報）/ <code>Photo</code>（写真）</b>、いずれも <b><code>allow.owner()</code></b>〔＝作成者本人だけが CRUD〔作成・読取・更新・削除〕できる設定〕。</li>
+    <li>S3〔＝写真の保管庫〕 パス：<b><code>media/{entity_id}/*</code></b>（entity = Cognito identity で本人分離＝人ごとにフォルダを分ける）。<b>Block Public Access 有効化</b>〔＝外部への公開を全面ブロック〕。</li>
+    <li>guest/public アクセス・API key 認可は<b>使わない</b>。モデルへの <code>allow.authenticated()</code>〔＝ログイン済みなら誰でも可〕 も<b>使わない</b>（§4。工程2 の custom query <code>generateReport</code> のみ <code>allow.authenticated("identityPool")</code>＝IAM 認可〔＝AWS の権限で本人確認する方式〕を使う）。</li>
+  </ul>
+
+  <h3>3.4 冪等キー・生成制御・認可検証</h3>
+  <div class="note" style="background:var(--accent-light); border-left-color:var(--accent);">🔰 この節は「<b>二重生成・なりすまし・使いすぎを防ぐ安全装置</b>」。連打や再送で AI を無駄に2回呼ばない／他人の写真を読ませない／回数を制限する、を仕組みで担保する。</div>
+  <ul>
+    <li>冪等キー〔＝同じ入力なら1回だけ実行する“合言葉”〕：<b><code>reportId + imageSetHash + inputHash + promptVersion + modelId + schemaVersion</code></b>（同一入力の再試行・二重送信で Bedrock を二重実行しない）。
+      <ul>
+        <li><code>imageSetHash</code>：Lambda が実際に read した S3 key＋画像バイトから順序安定で算出（クライアント値を信用しない）。</li>
+        <li><code>inputHash</code>：Lambda が Report から読んだ <code>reportDate/workType/memo/nextPlanInput</code> を<b>順序固定・Unicode 正規化（NFC〔＝見た目が同じ文字の内部表現をそろえる処理〕）</b>してハッシュ化。<b>写真が同じでもテキスト入力を変更すれば新規生成</b>され、古いドラフトを返さない（proposal §3 の「テキスト入力が一次情報」との整合）。</li>
+      </ul>
+    </li>
+    <li>生成状態は <b>lease 付き状態機械</b>〔＝「作業中ロック」に期限（lease）を付け、状態を <code>RUNNING</code>／<code>FAILED</code> などで管理する仕組み。期限切れなら別プロセスが引き取れる〕として DynamoDB（GenerationJobs）に保存する：<code>leaseExpiresAt</code>／<code>attemptId</code>／<code>attemptCount</code> を持ち、<code>FAILED</code> と lease 期限切れ <code>RUNNING</code> は条件付き更新で再取得（即時再試行）できる。完了・失敗の更新は <code>attemptId</code> 一致を条件にする。<b>TTL は履歴削除専用</b>とし、ロック期限判定に使わない。</li>
+    <li>Lambda は<b>ハードタイムアウトの <code>catch</code> に依存しない</b>：<code>context.getRemainingTimeInMillis()</code> に基づく deadline（AbortSignal）で Bedrock 呼び出しを打ち切り、失敗保存の後処理バッファを確保する（工程2）。</li>
+    <li>写真は枚数上限（例：3枚、上振れ 5枚）、クライアント側で<b>長辺 1,568px に圧縮</b>、出力は <code>maxTokens</code> で上限。生成中はボタン無効化。<b>再生成回数上限はサーバー側 quota〔＝1日あたりの回数上限〕（Report 単位・ユーザー×日次、条件付き更新で強制。冪等ヒットは加算しない）が正本</b>で、クライアントの回数表示は UX 補助。</li>
+    <li>アップロードは MIME type・サイズ・枚数を、生成入力は日付・文字数上限を<b>サーバー側でも検証</b>。</li>
+    <li><b>写真アクセス認可の正本は「S3 key が <code>media/{呼び出し元identityId}/</code> 配下」のサーバー側プレフィックス検証</b>（工程2、identityPool 認可で <code>cognitoIdentityId</code> を取得）。クライアントが更新できる <code>Report.photoKeys</code> は表示・整合性チェック用であり、<b>認可の正本にしない</b>。</li>
+    <li><code>genStatus</code> の更新責任：<b>UI が <code>DRAFT</code>／<code>GENERATING</code>／<code>CONFIRMED</code>、handler が生成完了・失敗時に <code>GENERATED</code>／<code>FAILED</code>＋ドラフト本文を Report へ永続化</b>（リロード・切断後の状態復元のため）。</li>
+  </ul>
+
+  <h3>3.5 ログ規約（証拠・再現性／§9 末）</h3>
+  <div class="note" style="background:var(--accent-light); border-left-color:var(--accent);">🔰 この節は「<b>ログに何を書き、何を書かないか</b>」のルール。写真やプロンプト本文などの中身は残さず、追跡に必要な数値・IDだけを残す（プライバシーと後の集計の両立）。</div>
+  <ul>
+    <li><b>画像・プロンプト本文は残さない</b>。記録するのは request ID・report ID の非可逆識別子・モデルID・latency・usage トークン・結果状態・冪等/重複抑止結果。</li>
+    <li>構造化ログ（JSON）のフィールド名は<b>トップレベルで統一</b>し、工程2（出力）と工程6（Logs Insights 集計）で同一にする：<br>
+      <code>requestId / reportIdHash / modelId / status（SUCCEEDED|FAILED|IDEMPOTENT_HIT|IN_PROGRESS|FORBIDDEN|QUOTA_EXCEEDED|STALE_ATTEMPT|INPUT_CHANGED）/ resultStatus（ok|needs_review|unknown）/ errorName / inputTokens / outputTokens / totalTokens / latencyMs / photoCount / idempotent</code></li>
+    <li>CloudWatch Logs 保持は 7〜14日に固定（§6。<b>設定は工程2の完了条件</b>）。</li>
+  </ul>
+
+  <div class="callout" style="background:var(--accent-light); border-left-color:var(--accent);">
+    <b>🔰 §3 の自己チェック（言葉で説明できればOK）</b>
+    <ul style="margin:8px 0 0;">
+      <li>AI は「東京・Claude Haiku 4.5・Converse/InvokeModel」で呼ぶ、と言える（§3.1）</li>
+      <li>データは3種（Site/Report/Photo）で、<b>本人だけ</b>が触れる（<code>allow.owner()</code>）と言える（§3.3）</li>
+      <li>冪等キーが「同じ入力なら AI を1回だけ呼ぶ合言葉」だと説明できる（§3.4）</li>
+      <li>ログに<b>写真・プロンプト本文を書かない</b>理由が言える（§3.5）</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 4. アーキテクチャ ============ -->
+<section>
+  <h2><span class="num">4</span>アーキテクチャ概要（proposal §4 要約）</h2>
+
+  <div class="callout" style="background:var(--accent-light); border-left-color:var(--accent);">
+    <b>🔰 図の読み方（初学者向け）</b><br>
+    上から下へ<b>データの流れ</b>です。①スマホアプリ → ②Amplify のバックエンド（認証 Cognito・データ AppSync/DynamoDB・写真 S3・処理 Lambda）→ ③AI（Bedrock の Claude）。日報生成の入口は <code>generateReport</code> という Lambda で、ここで<b>「本人か」「他人の写真を読もうとしていないか」「二重生成でないか」を必ずチェック</b>してから AI を呼びます。細部の用語は §3 のグロス参照。
+  </div>
+
+  <div class="arch">
+    <div class="arch-node arch-phone">
+      <b>📱 スマホ（React Native アプリ / Expo）</b>
+      <span class="sub">Amplify Libraries（aws-amplify / @aws-amplify/ui-react-native）</span>
+    </div>
+    <div class="arch-arrow">▼</div>
+    <div class="arch-backend">
+      <b>Amplify Gen2 Backend（TypeScript 一元管理）</b>
+      <div class="arch-grid">
+        <div class="arch-cell">
+          <b>Cognito</b>
+          認証（メールログイン / <code>defineAuth</code>）
+        </div>
+        <div class="arch-cell">
+          <b>AppSync (GraphQL) + DynamoDB</b>
+          Site / Report ─ <code>allow.owner()</code>（本人のみ CRUD）
+        </div>
+        <div class="arch-cell">
+          <b>S3</b>
+          現場写真 <code>media/{entity_id}/*</code>（本人分離）<br>Block Public Access 有効
+        </div>
+      </div>
+      <div class="arch-lambda">
+        <b>⚙ Lambda ── generateReport（custom query, identityPool(IAM) 認可）</b>
+        <ol>
+          <li>所有者(sub)再検証</li>
+          <li>S3 key の identityId プレフィックス検証（<b>IDOR 対策の正本</b>）</li>
+          <li>冪等キーで二重実行防止</li>
+        </ol>
+        CDK: <code>bedrock:InvokeModel</code> ＋ S3 read（<code>media/*</code> 限定）
+      </div>
+    </div>
+    <div class="arch-arrow">▼</div>
+    <div class="arch-node arch-bedrock">
+      <b>🤖 Amazon Bedrock ── Claude Haiku 4.5（東京 In-Region 直接）</b>
+      <span class="sub"><code>anthropic.claude-haiku-4-5-20251001-v1:0</code><br>
+      Converse / InvokeModel ＋ 画像入力 ＋ Structured Outputs（JSON Schema で日報4項目を強制）</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>レイヤ</th><th>サービス</th><th>Gen2 定義</th></tr>
+    <tr><td>フロント</td><td>React Native (Expo) + Amplify UI for React Native</td><td>— / EAS Build（開発・配布ビルド）</td></tr>
+    <tr><td>認証</td><td>Cognito</td><td><code>defineAuth</code></td></tr>
+    <tr><td>データ</td><td>AppSync + DynamoDB（<code>allow.owner()</code>）</td><td><code>defineData</code></td></tr>
+    <tr><td>ストレージ</td><td>S3（<code>media/{entity_id}/*</code>）</td><td><code>defineStorage</code></td></tr>
+    <tr><td>AI処理</td><td>Lambda → Bedrock</td><td><code>defineFunction</code> + custom query</td></tr>
+    <tr><td>権限付与</td><td>IAM（Bedrock invoke / S3 read）</td><td><code>backend.ts</code>（CDK <code>addToRolePolicy</code>）</td></tr>
+  </table>
+  </div>
+
+  <div class="note" style="background:var(--accent-light); border-left-color:var(--accent);">
+    ℹ 図中の <b>IDOR</b> は「他人のデータを ID 差し替えで覗く攻撃」のこと。②の S3 key プレフィックス検証がその対策の正本です（§5・§6 でも同義で使用）。
+  </div>
+  <div class="callout">
+    <b>主要技術リスク（工程0で判定）</b>：AppSync のリクエスト実行上限 <b>30秒（変更不可）</b>の中に「複数画像取得＋Lambda コールドスタート〔＝初回起動の遅れ〕＋Bedrock 推論＋初回スキーマコンパイル」を収められるか。収まらなければ非同期（Lambda/SQS＋ポーリング）へ切替（§6・§9）。
+  </div>
+</section>
+
+<!-- ============ 5. ゲート対応表 ============ -->
+<section>
+  <h2><span class="num">5</span>ゲート対応表（process.md × 工程）</h2>
+  <div class="callout" style="background:var(--accent-light); border-left-color:var(--accent);">
+    <b>🔰 このセクションのゴール（初学者向け）</b><br>
+    ゲート＝「ここまで出来たら合格」の<b>関門</b>です。難しい方へ4段階：<b>A</b>（部品が1つ動く）→ <b>A+</b>（ログインから確定保存まで一気通貫）→ <b>S-tech</b>（他メンバーに共有でき、安全チェックも通る）→ <b>S-accept</b>（品質 KPI まで満たし提案として受け入れられる）。大事なのは<b>合否を主観でなく「証拠」（スクショ／ログ／デモ動画）で判定</b>すること。下の表は「各ゲートに何が必要で、どの工程で作るか」の対応表です。
+  </div>
+  <p>process.md（<b>v2</b> / 2026-07-11 改定）の A→A+→S-tech→S-accept ゲートと、本手順書の工程の対応。<b>証拠（スクショ／ログ／デモ）で判定</b>する（主観判定しない）。</p>
+
+  <div class="gates">
+    <div class="gate g1">
+      <span class="g-name">A</span>
+      <span class="g-sub">土台が動く</span>
+      sandbox デプロイ／ログイン／写真アップロード／AI生成の<b>どれか1つ</b>が動く<br>
+      <span class="badge blue">≒ 工程1の一部 or 工程0の疎通</span>
+    </div>
+    <div class="gate g2">
+      <span class="g-name">A+</span>
+      <span class="g-sub">一気通貫</span>
+      ログイン→アップロード→AI生成→確定保存→一覧表示が手元で通る<br>
+      <span class="badge blue">≒ 工程1〜3 一気通貫</span>
+    </div>
+    <div class="gate g3">
+      <span class="g-name">S-tech</span>
+      <span class="g-sub">技術共有可</span>
+      EAS 内部配布 or 通しデモ＋<b>安全ゲート全て</b>＋最小品質スモーク<br>
+      <span class="badge blue">≒ A+ ＋ 工程5 の一部 ＋ 工程4 §0</span>
+    </div>
+    <div class="gate g4">
+      <span class="g-name">S-accept</span>
+      <span class="g-sub">提案受入可</span>
+      S-tech ＋ 工程4 フル KPI 合格（充足率≥90%・事実誤認率≤5% など）<br>
+      <span class="badge blue">≒ S-tech ＋ 工程4 全件評価</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>ゲート</th><th>到達条件（process.md §2/§5）</th><th>到達に必要な工程</th><th>証拠</th></tr>
+    <tr>
+      <td><b>A</b>（土台が動く）</td>
+      <td>いずれか1つ：sandbox デプロイ成功（CFn 成功）／ログイン／写真アップロード（S3保存）／AI生成（Bedrock 呼出）のどれか1つが動く</td>
+      <td><b>工程1 の一部</b>（<code>ampx sandbox</code> 成功 or 部品1つ）。工程0の疎通ログでも AI生成の1つに該当し得る</td>
+      <td>動作画面のスクショ or CloudWatch ログ</td>
+    </tr>
+    <tr>
+      <td><b>A+</b>（一気通貫）</td>
+      <td>ログイン→写真アップロード→AI生成→確定保存→一覧表示 が手元(sandbox/開発ビルド)で一気通貫</td>
+      <td><b>工程1〜3 の一気通貫</b>（前提として工程0で方式確定）</td>
+      <td>通しデモ動画＋Bedrock 応答の CloudWatch ログ</td>
+    </tr>
+    <tr>
+      <td><b>S-tech</b>（技術共有可）</td>
+      <td>共有手段いずれか1つ：<b>EAS Build 内部配布（開発ビルド）での他メンバー実機確認／チーム前通しデモ成功</b>。<b>かつ安全ゲート全て</b>：TC-1（IDOR 否定テスト。B所有 Report＋Aの key 含む）／TC-3（冪等抑止）／TC-4（AppSync 30秒で不整合なし or 非同期化判断済み）／ログ本文非出力確認／AWS Budgets 設定済み。<b>かつ最小品質スモーク</b>（無関係・不鮮明写真とテキスト欠落入力で捏造しない、安全項目で「問題なし」を生成しない）</td>
+      <td><b>A+ ＋ EAS 内部配布 or 通しデモ ＋ 安全ゲート ＋ スモーク</b>（工程5 の TC-1/3/4・ログ健全性＋工程1 の Budgets＋工程4 §0）</td>
+      <td>配布リンク or デモ記録 ＋ TC-1/3/4 の判定記録（TC-7 テンプレ）・ログ確認・Budgets スクショ・スモーク記録</td>
+    </tr>
+    <tr>
+      <td><b>S-accept</b>（提案受入可）</td>
+      <td>S-tech ＋ 工程4 フル KPI 合格（充足率≥90%・事実誤認率≤5%・要確認が推測で埋まらない）</td>
+      <td><b>S-tech ＋ 工程4 全件評価</b></td>
+      <td>KPI 集計表・合否判定表</td>
+    </tr>
+  </table>
+  </div>
+
+  <ul>
+    <li><b>工程6（実測コスト更新）・工程5 の TC-2/5/6/8 網羅合格は S-tech の必須条件ではない</b>（process.md §3 ストレッチ目標）。ただし<b>工程5 の TC-1／TC-3／TC-4 とログ健全性確認、AWS Budgets（工程1で初期設定）、工程4 §0 の最小品質スモークは S-tech 必須</b>（process.md §2 v2）。</li>
+    <li><b>工程4のフル KPI 測定は S-accept の条件</b>であり、S-tech（技術共有）だけならスモークで足りる。「共有できる」と「提案価値を受入できる」を混同しない。</li>
+    <li>S-tech の「最低限の安全策」＝枚数上限・連打防止に加え、「他ユーザーの写真を読めない」「二重生成されない」「ログに写真・プロンプト本文が出ない」まで（process.md §2）。</li>
+  </ul>
+
+  <div class="callout" style="background:var(--accent-light); border-left-color:var(--accent);">
+    <b>🔰 §5 の自己チェック（言葉で説明できればOK）</b>
+    <ul style="margin:8px 0 0;">
+      <li>A → A+ → S-tech → S-accept の順で難しくなる、と言える</li>
+      <li>合否は<b>証拠（スクショ・ログ・デモ）</b>で決める、と言える</li>
+      <li>「共有できる（S-tech）」と「提案として受け入れられる（S-accept）」は別、と説明できる</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 6. コスト前提 ============ -->
+<section>
+  <h2><span class="num">6</span>コスト前提の要約（proposal §5 / §6）</h2>
+  <div class="callout" style="background:var(--accent-light); border-left-color:var(--accent);">
+    <b>🔰 このセクションのゴール（初学者向け）</b><br>
+    「このアプリを月いくらで動かせるか」の<b>ざっくり見積もり</b>と、<b>お金が膨らまないための歯止め（ガードレール）</b>の一覧です。要点は2つ：①標準的な使い方なら<b>月数ドル規模</b>、②ただし写真の保持期間・ログ保持・予算監視などの<b>設定を入れて初めてこの見積もりが成立</b>する。数値は実施時に料金ページ／実測で更新します（工程6）。
+  </div>
+  <p><b>通常料金ベース（無料枠を引かない）月額試算</b>（正本は proposal §5 の<b>表A（通常料金）／表B（実支払見込み）</b>。実測更新は <code>07_step6_cost.md</code>）：</p>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>ケース</th><th>合計（通常料金・表A）</th><th>主因</th></tr>
+    <tr><td>標準（5人・日報100件/月・写真3枚）</td><td><b>約 $1.0〜1.2 ＋ EAS Build 従量分 / 月</b></td><td>Bedrock 約$0.94</td></tr>
+    <tr><td>上振れ（10人・日報300件/月・写真5枚）</td><td><b>約 $7.5〜8 ＋ EAS Build 従量分 / 月</b></td><td>Bedrock 約$6.9</td></tr>
+  </table>
+  </div>
+
+  <ul>
+    <li>EAS Build の通常料金（on-demand 単価）と Free plan の枠・超過時料金は、実施時に expo.dev/pricing で確認して proposal §5 表A/表Bへ記入する（工程6）。</li>
+    <li>実支払見込み（表B）：適用可能な無料枠・Expo Free plan・新 Free Tier クレジットで表Aより縮小し、標準ケースは<b>実質 月額数ドル以内</b>の見込み。単価・無料枠はリージョン/時期で変動するため運用前に料金ページで確認（proposal §5）。</li>
+    <li>Bedrock 単価前提：Claude Haiku 4.5 = 入力 $1 / 出力 $5（per 100万トークン）。入力は画像で変動 → 工程6 で <b>CountTokens（無料）／実 usage</b> により実測更新。</li>
+  </ul>
+  <div class="note">
+    <strong>⚠ 注意</strong>：上記試算の前提（写真30日保持・Logs 7〜14日・予算監視）は <b>S3 Lifecycle（工程1）／Logs retention（工程2）／AWS Budgets（工程1）を適用して初めて成立</b>する。適用前は保持が無期限となり試算前提を満たさない（proposal §5 注記）。
+  </div>
+
+  <h3>主要ガードレール一覧（proposal §6・詳細は各工程ファイル）</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>ガードレール</th><th>要点</th><th>主担当工程</th></tr>
+    <tr><td>AppSync 30秒上限</td><td>最大写真枚数で P95〔＝遅い方から5%を除いた実用上の最大時間〕計測、超過なら非同期化</td><td>工程0・工程2</td></tr>
+    <tr><td>Structured Outputs 初回コンパイル</td><td>初回最大数分・キャッシュ24h → デプロイ/スキーマ変更後にウォームアップ</td><td>工程0・工程2</td></tr>
+    <tr><td>写真・生成制御</td><td>枚数上限・1,568px 圧縮・<code>maxTokens</code>・冪等キー（<code>inputHash</code> 込み・lease 状態機械）・<b>サーバー側 quota</b>・サーバー側検証</td><td>工程2・工程3</td></tr>
+    <tr><td>認可再検証（IDOR）</td><td><code>generateReport</code>（identityPool 認可）内で所有者 sub 再検証＋S3 key の <code>media/{identityId}/</code> プレフィックス検証（正本）。<code>Report.photoKeys</code> は認可の正本にしない</td><td>工程2・工程5</td></tr>
+    <tr><td>保存/ログ保持</td><td>S3 Lifecycle（例30日）〔＝一定日数で自動削除する設定〕＋未完了 multipart abort〔＝中断した分割アップロードのゴミ掃除〕＝<b>工程1で設定</b>、Logs 7〜14日＝<b>工程2で設定</b>、本文非記録</td><td>工程1・工程2</td></tr>
+    <tr><td>Bedrock リージョン/IAM</td><td>東京 In-Region、foundation-model ARN に <code>bedrock:InvokeModel</code></td><td>工程0・工程2</td></tr>
+    <tr><td>Free Tier 注意</td><td>2025-07-15 以降作成アカウントはクレジット方式。無料枠を恒常前提にしない</td><td>工程6</td></tr>
+    <tr><td>コスト監視</td><td>AWS Budgets〔＝予算超過を通知する仕組み〕月次予算＋複数閾値通知＝<b>工程1で初期設定・工程6で実測見直し</b>（Budgets は通知であり停止機構ではない。停止側はアプリ quota が担う）、Lambda reserved concurrency〔＝同時実行数の上限予約〕小＝<b>工程2で初期設定・工程6で見直し</b></td><td>工程1・工程2・工程6</td></tr>
+  </table>
+  </div>
+
+  <div class="callout" style="background:var(--accent-light); border-left-color:var(--accent);">
+    <b>🔰 §6 の自己チェック（言葉で説明できればOK）</b>
+    <ul style="margin:8px 0 0;">
+      <li>標準的な使い方なら<b>月数ドル規模</b>、と言える</li>
+      <li>この見積もりは<b>保持期間・ログ保持・予算監視の設定を入れて初めて成立</b>する、と言える</li>
+      <li>Budgets は「通知」であって「自動停止」ではない（止めるのはアプリ側の quota）、と説明できる</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ チェックリスト ============ -->
+<section>
+  <h2><span class="num">✓</span>完了条件チェックリスト（本ファイル＝環境・規約の整備）</h2>
+  <ul class="checklist">
+    <li>Node.js（v18.16.0 以降、推奨 20 LTS+）／npm（v6.14.4+）／git（v2.14.1+）を確認</li>
+    <li>AWS CLI／認証を設定し、既定リージョンを <code>ap-northeast-1</code> に設定</li>
+    <li>東京リージョンで <b>Claude Haiku 4.5 を実際に呼び出して成功</b>（初回自動有効化。工程0の疎通で確認）</li>
+    <li><code>npm create amplify@latest</code> / <code>npx ampx sandbox</code> が実行できる状態</li>
+    <li>共通規約（モデルID・パス規約・データモデル名・冪等キー・ログ規約）をチームで合意</li>
+    <li>ゲート対応表（§5）とコスト前提（§6）をチームで共有</li>
+    <li><b>次に <code>01_step0_spike.md</code>（工程0＝最優先ゲート）へ進むことを確認</b></li>
+  </ul>
+</section>
+
+<!-- ============ 失敗時の代替 ============ -->
+<section>
+  <h2><span class="num">!</span>失敗時の代替</h2>
+  <ul>
+    <li><b>初回呼び出しで <code>AccessDeniedException</code> 等が出て使えない</b>：①初回の<b>用途（ユースケース）入力</b>が未提出でないか、②<b>管理者が IAM ポリシー／SCP</b> で当該モデルを制限していないか、③リージョンが東京 <code>ap-northeast-1</code> かを確認。東京で未提供の状況が判明した場合は proposal §6 の<b>日本 Geo 推論プロファイル</b>（<code>jp.anthropic.claude-haiku-4-5-20251001-v1:0</code>／推論プロファイル＋東京・大阪の foundation-model ARN 許可）への切替を検討（工程0で判定）。</li>
+    <li><b>Node/CLI の相性問題</b>：Node を LTS（20 系）に統一し <code>ampx</code> を再インストール。<code>amplify</code>（Gen1 CLI）と混同しない。</li>
+    <li><b>リージョン取り違え</b>：CLI 既定・Bedrock コンソール・IAM ARN のすべてが <code>ap-northeast-1</code> を指しているか再点検。</li>
+  </ul>
+
+  <h3>process.md ゲート対応</h3>
+  <p>本ファイルは環境・規約の整備であり単独ではゲート非該当。ここで整えた前提の上で、<b>工程0の疎通 or 工程1 の部品1つで A 評価</b>、<b>工程1〜3 一気通貫で A+</b>、<b>EAS 内部配布／通しデモ＋安全ゲート＋最小品質スモークで S-tech</b>、<b>さらに工程4 KPI 合格で S-accept</b> に到達する（§5 対応表・process.md v2）。</p>
+</section>
+
+<footer>GenbaLog 実装手順書シリーズ ── 00_overview.md より生成</footer>
+</div>
+</body>
+</html>

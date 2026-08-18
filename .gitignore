@@ -1,23 +1,27 @@
+# ==========================================================
+# GenbaLog モノレポ 共通 .gitignore
+# ここはリポジトリ全体に効く。各サブプロジェクト固有の除外は
+# genbalog/.gitignore ・ genbalog-spike/.gitignore 側に書くこと。
+# ==========================================================
 
-gitignore
-# 依存ライブラリ（npm install で再生成できる）
+# --- macOS が勝手に作るファイル ---
+.DS_Store
+
+# --- 依存ライブラリ（npm install で再生成できるので管理しない） ---
 node_modules/
 
-# 秘密情報（AWS認証など。絶対にコミットしない）
+# --- 秘密情報（AWS認証など。絶対にコミットしない） ---
 .env
 .env.*
 
-# ビルド生成物
+# --- Amplify Gen2 ---
+# sandbox を起動するたびに内容が変わる自動生成物なので管理しない
+.amplify/
+amplify_outputs*
+amplifyconfiguration*
+
+# --- ログ・ビルド生成物 ---
+npm-debug.log*
+*.tsbuildinfo
 dist/
 build/
-*.tsbuildinfo
-
-# ログ
-npm-debug.log*
-
-# macOS
-.DS_Store
-
-# Amplify Gen2（今後導入時）
-.amplify/
-amplify_outputs.json

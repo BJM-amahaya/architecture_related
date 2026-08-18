@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 工程1：認可付き Data／Storage（GenbaLog 実装手順書）</title>
+<style>
+  :root {
+    --bg: #000000;
+    --card: #121212;
+    --ink: #e5e7eb;
+    --muted: #9ca3af;
+    --accent: #3b82f6;
+    --accent-light: #1b2a44;
+    --green: #34d399;
+    --green-light: #10291f;
+    --amber: #fbbf24;
+    --amber-light: #2b2211;
+    --red: #f87171;
+    --red-light: #2c1717;
+    --purple: #a78bfa;
+    --purple-light: #221d38;
+    --border: #2f2f2f;
+    --code-bg: #1c1c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  .container { max-width: 1000px; margin: 0 auto; padding: 24px 20px 80px; }
+  header.hero {
+    background: linear-gradient(135deg, #0b1220, #16233d);
+    color: #fff;
+    border-radius: 14px;
+    padding: 32px 36px;
+    margin-bottom: 32px;
+  }
+  header.hero h1 { margin: 0 0 10px; font-size: 26px; }
+  header.hero p { margin: 4px 0; opacity: .92; }
+  header.hero .tags { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  header.hero .tag {
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 999px;
+    padding: 3px 12px;
+    font-size: 12.5px;
+  }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 26px 30px;
+    margin-bottom: 26px;
+  }
+  h2 {
+    font-size: 20px;
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent-light);
+  }
+  h2 .num {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 8px;
+    padding: 1px 10px;
+    font-size: 15px;
+    margin-right: 10px;
+  }
+  h2 .num.green { background: var(--green); color: #04231a; }
+  h2 .num.red { background: var(--red); color: #2c0f0f; }
+  h2 .num.purple { background: var(--purple); color: #1c1233; }
+  h3 { font-size: 16px; margin: 22px 0 10px; color: #93c5fd; }
+  code {
+    background: var(--code-bg);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    word-break: break-all;
+  }
+  pre {
+    background: #0d0d0d;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; color: inherit; padding: 0; word-break: normal; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--accent-light); color: #93c5fd; white-space: nowrap; }
+  tr:nth-child(even) td { background: #181818; }
+  .table-wrap { overflow-x: auto; }
+  .note {
+    background: var(--amber-light);
+    border-left: 4px solid var(--amber);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+  .note strong:first-child { color: var(--amber); }
+  .callout {
+    background: var(--red-light);
+    border-left: 4px solid var(--red);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  .callout strong:first-child, .callout b:first-child { color: var(--red); }
+  .ok-note {
+    background: var(--green-light);
+    border-left: 4px solid var(--green);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+  .ok-note strong:first-child { color: var(--green); }
+  .kids {
+    background: #131a2c;
+    border: 1px dashed var(--accent);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+  .kids strong:first-child { color: #93c5fd; }
+  .step-h {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 22px 0 8px;
+  }
+  .step-h .step-badge {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    width: 26px; height: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-h b { font-size: 15px; color: #93c5fd; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+
+  /* ===== 縦フロー図 ===== */
+  .flow { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
+  .flow-step { display: flex; align-items: stretch; gap: 14px; }
+  .flow-rail {
+    display: flex; flex-direction: column; align-items: center;
+    width: 44px; flex-shrink: 0;
+  }
+  .flow-dot {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 15px;
+    flex-shrink: 0;
+  }
+  .flow-line { width: 3px; flex-grow: 1; background: var(--border); min-height: 14px; }
+  .flow-body { padding: 4px 0 22px; flex-grow: 1; }
+  .flow-body b { font-size: 15px; }
+  .flow-body .desc { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+  .c-blue { background: var(--accent); }
+  .c-red  { background: var(--red); }
+  .c-green{ background: var(--green); }
+  .c-purple{ background: var(--purple); }
+  .c-amber{ background: var(--amber); color: #2b2211 !important; }
+
+  /* ===== 分岐箱 ===== */
+  .branch { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; }
+  .branch-box { flex: 1 1 260px; border-radius: 10px; padding: 14px 18px; font-size: 13.5px; }
+  .branch-box.ok  { background: var(--green-light); border: 2px solid var(--green); }
+  .branch-box.ng  { background: var(--amber-light); border: 2px solid var(--amber); }
+  .branch-box.bad { background: var(--red-light); border: 2px solid var(--red); }
+  .branch-box.info{ background: var(--accent-light); border: 2px solid var(--accent); }
+  .branch-box b { display: block; margin-bottom: 6px; font-size: 14.5px; }
+  .branch-box.ok b { color: var(--green); }
+  .branch-box.ng b { color: var(--amber); }
+  .branch-box.bad b { color: var(--red); }
+  .branch-box.info b { color: #93c5fd; }
+
+  /* ===== データモデル関連図 ===== */
+  .model-flow { margin: 18px 0; }
+  .model-box {
+    border-radius: 10px;
+    padding: 12px 16px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .model-box > b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .model-box .fields { font-size: 12.5px; color: var(--muted); line-height: 1.65; }
+  .model-site   { background: var(--purple-light); border: 2px solid var(--purple); }
+  .model-site > b { color: var(--purple); }
+  .model-report { background: var(--accent-light); border: 2px solid var(--accent); }
+  .model-report > b { color: #93c5fd; }
+  .model-photo  { background: var(--green-light); border: 2px solid var(--green); }
+  .model-photo > b { color: var(--green); }
+  .rel-arrow {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.3;
+    margin: 6px 0;
+  }
+  .rel-arrow .glyph { display: block; font-size: 20px; }
+
+  /* ===== genStatus 状態遷移図 ===== */
+  .states { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0 6px; }
+  .state {
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .state small { display: block; font-weight: 400; font-size: 11px; opacity: .85; }
+  .st-ui      { background: var(--purple-light); border: 2px solid var(--purple); color: var(--purple); }
+  .st-handler { background: var(--green-light);  border: 2px solid var(--green);  color: var(--green); }
+  .st-fail    { background: var(--red-light);    border: 2px solid var(--red);    color: var(--red); }
+  .st-arrow { color: var(--muted); font-size: 13px; white-space: nowrap; text-align: center; }
+  .st-arrow b { display: block; font-size: 11px; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .legend .sw {
+    display: inline-block; width: 11px; height: 11px;
+    border-radius: 3px; margin: 0 4px 0 12px; vertical-align: middle;
+  }
+  .legend .sw:first-child { margin-left: 0; }
+
+  /* ===== A評価 OR ゲート図 ===== */
+  .gate-or { margin: 18px 0; }
+  .gate-cards { display: flex; gap: 14px; flex-wrap: wrap; }
+  .gate-card {
+    flex: 1 1 210px;
+    background: var(--accent-light);
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  .gate-card b { display: block; color: #93c5fd; margin-bottom: 4px; }
+  .gate-card .ev { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+  .or-mark { text-align: center; color: var(--amber); font-weight: 700; margin: 10px 0; letter-spacing: 2px; }
+  .gate-goal {
+    background: var(--green-light);
+    border: 2px solid var(--green);
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: center;
+    margin-top: 12px;
+  }
+  .gate-goal b { color: var(--green); font-size: 15px; }
+
+  /* ===== 対話式チェックリスト ===== */
+  .checklist { list-style: none; padding: 0; margin: 8px 0; }
+  .checklist li {
+    padding: 10px 12px;
+    border-bottom: 1px dashed var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist input[type="checkbox"] {
+    width: 20px; height: 20px;
+    margin: 1px 0 0;
+    flex-shrink: 0;
+    accent-color: var(--green);
+    cursor: pointer;
+  }
+  .checklist label { cursor: pointer; flex-grow: 1; }
+  .checklist li.done label { text-decoration: line-through; color: var(--muted); }
+  .checklist li.done { background: var(--green-light); border-radius: 6px; }
+  .check-toolbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin: 6px 0 12px; font-size: 13px; color: var(--muted);
+  }
+  .check-progress { font-weight: 700; color: var(--accent); }
+  .reset-btn {
+    background: #141414;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 14px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .reset-btn:hover { background: var(--code-bg); }
+  .progress-bar {
+    flex-grow: 1; min-width: 120px; height: 8px;
+    background: var(--border); border-radius: 999px; overflow: hidden;
+  }
+  .progress-bar > span {
+    display: block; height: 100%;
+    background: var(--green); width: 0%;
+    transition: width .25s ease;
+  }
+
+  .badge {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 1px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .badge.red { background: var(--red-light); color: var(--red); }
+  .badge.green { background: var(--green-light); color: var(--green); }
+  .badge.blue { background: var(--accent-light); color: var(--accent); }
+  .badge.purple { background: var(--purple-light); color: var(--purple); }
+  footer { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 30px; }
+  @media print {
+    body { background: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    section { break-inside: avoid; border: 1px solid #444; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="hero">
+  <h1>02 工程1：認可付き Data／Storage</h1>
+  <p>現場AI日報「GenbaLog」PoC / Amplify Gen2 ── データの入れ物（DB）と写真の置き場（S3）を、<b>「自分のものは自分だけが見られる」</b>状態で作る工程。</p>
+  <p style="font-size:13px; margin-top:10px;">
+    対応工程：<code style="background:rgba(255,255,255,.15); color:#fff;">proposal.md §9 工程1</code>／
+    対応ゲート：<code style="background:rgba(255,255,255,.15); color:#fff;">process.md A評価</code>
+    （sandbox デプロイ成功 or ログイン or 写真アップロードの<b>いずれか1つ</b>が動けば到達）
+  </p>
+  <div class="tags">
+    <span class="tag">Amplify Gen2（auth / data / storage）</span>
+    <span class="tag">allow.owner()＝本人のみ</span>
+    <span class="tag">S3 media/{entity_id}/*</span>
+    <span class="tag">Block Public Access</span>
+    <span class="tag">S3 Lifecycle 30日＋AWS Budgets</span>
+    <span class="tag">npx ampx sandbox</span>
+  </div>
+</header>
+
+<!-- ============ 目的・前提 ============ -->
+<section>
+  <h2><span class="num">◎</span>目的・前提（依存する工程）</h2>
+
+  <div class="kids">
+    <strong>🔰 ひとことで言うと</strong><br>
+    この工程では <b>アプリ本体（画面）や AI はまだ作りません</b>。作るのは「土台」だけです。<br>
+    ① <b>ログインの仕組み</b>（メールとパスワード）／② <b>データの入れ物</b>（現場・日報・写真の情報を入れる表）／
+    ③ <b>写真の置き場</b>（S3 というクラウドの倉庫）── この3つを、<b>他人が絶対にのぞけない設定</b>で用意します。
+  </div>
+
+  <p><b>目的</b>：<code>Site</code>（現場）／<code>Report</code>（日報）／<code>Photo</code>（写真）の3モデルを
+  <b><code>allow.owner()</code>（本人のみ）</b>で定義し、写真は S3 の <code>media/{entity_id}/*</code> で本人分離する。
+  <code>npx ampx sandbox</code> でバックエンドをデプロイし、
+  <b>「Cognito ログイン → 現場登録 → 写真アップロード（S3 保存）」</b>までを動作確認する。</p>
+
+  <h3>依存関係</h3>
+  <ul>
+    <li><b>前工程（工程0：技術スパイク）</b>は Bedrock 疎通・同期／非同期の方式判定であり、
+      <b>本工程（データ／ストレージ基盤）とは独立</b>して並行着手できる。工程1は AI 処理（工程2）の<b>前提基盤</b>となる。</li>
+    <li>本工程では <b>AI 処理（<code>generateReport</code>）は実装しない</b>（工程2 の担当）。
+      ただしデータモデルには工程2／工程3 が使う
+      「生成ドラフト・生成状態・写真 key リスト（<code>photoKeys</code>。<b>表示・整合性チェック用で認可の正本ではない</b>）」の
+      <b>格納フィールドだけ</b>を先に用意する（冪等制御用テーブルは工程2 が CDK で別途作成）。</li>
+  </ul>
+
+  <div class="ok-note">
+    <strong>✅ 着手可能</strong>：工程0（技術スパイク）は 2026-08-14 に完了済み（同期方式に確定）。
+    工程1は工程0の結果を待たずに始められる独立工程なので、<b>いますぐ着手できます</b>。
+  </div>
+
+  <h3>共通仕様（厳守）</h3>
+  <ul>
+    <li><b>Bedrock モデルID</b>：<code>jp.anthropic.claude-haiku-4-5-20251001-v1:0</code>（日本 In-Region 推論プロファイル）／
+      リージョン：<code>ap-northeast-1</code>（<b>使用するのは工程2</b>）</li>
+    <li><b>データモデル</b>：<code>Site</code>／<code>Report</code>／<code>Photo</code>（全て <code>allow.owner()</code>）</li>
+    <li><b>S3 パス</b>：<code>media/{entity_id}/*</code>、<b>冪等キー</b>：
+      <code>reportId + imageSetHash + inputHash + promptVersion + modelId + schemaVersion</code>
+      （定義の正本は <code>00_overview.md</code> §3.4。実装は工程2）</li>
+    <li><b>guest／public アクセス・API key 認可は使わない。モデルへの <code>allow.authenticated()</code> も使わない</b>
+      （全ログインユーザー許可となり得るため owner に限定。工程2 の custom query <code>generateReport</code> のみ
+      <code>allow.authenticated("identityPool")</code> を使う）</li>
+  </ul>
+
+  <div class="callout">
+    <b>⚠ モデルIDの落とし穴（工程0で実測）</b><br>
+    接頭辞なしの素のID <code>anthropic.claude-haiku-4-5-20251001-v1:0</code> は <b>on-demand 非対応</b>で、
+    呼び出すと <code>ValidationException: on-demand throughput isn't supported</code> になります。
+    必ず <b><code>jp.</code> 付きの推論プロファイルID</b>を使ってください（実測値の正本＝<code>genbalog-spike/RESULTS.md</code>）。
+  </div>
+</section>
+
+<!-- ============ 全体像：作るもの3つ ============ -->
+<section>
+  <h2><span class="num">図</span>この工程で作るもの（全体像）</h2>
+
+  <h3>1. データモデルの関連図（Site 1─n Report 1─n Photo）</h3>
+  <p>「1つの現場に日報がたくさん」「1つの日報に写真がたくさん」というぶら下がり構造です。
+  <b>3つとも <code>allow.owner()</code></b>＝作った本人しか読み書きできません。</p>
+
+  <div class="model-flow">
+    <div class="model-box model-site">
+      <b>Site（現場マスタ） <span class="badge green">allow.owner()</span></b>
+      <div class="fields">
+        <code>name</code>（現場名・必須）／<code>address</code>（所在地・任意）<br>
+        <code>owner</code>（作成者・<b>update 不可＝再割当禁止</b>）
+      </div>
+    </div>
+    <div class="rel-arrow">
+      <span class="glyph">↓</span>
+      <code>hasMany("Report", "siteId")</code> ── 1つの現場に <b>複数</b>の日報
+    </div>
+    <div class="model-box model-report">
+      <b>Report（日報） <span class="badge green">allow.owner()</span></b>
+      <div class="fields">
+        <b>入力</b>：<code>reportDate</code>（必須）／<code>workType</code>／<code>memo</code>／<code>nextPlanInput</code><br>
+        <b>生成ドラフト</b>：<code>draftWork</code>／<code>draftProgress</code>／
+        <code>draftSafetyConfirmed</code>／<code>draftSafetyUnconfirmed</code>／<code>draftTomorrow</code><br>
+        <b>状態</b>：<code>genStatus</code>（DRAFT／GENERATING／GENERATED／CONFIRMED／FAILED）<br>
+        <b>写真key</b>：<code>photoKeys</code>（<span style="color:var(--red)">認可の正本ではない</span>）／
+        <code>owner</code>（<b>再割当禁止</b>）
+      </div>
+    </div>
+    <div class="rel-arrow">
+      <span class="glyph">↓</span>
+      <code>hasMany("Photo", "reportId")</code> ── 1つの日報に <b>複数</b>の写真
+    </div>
+    <div class="model-box model-photo">
+      <b>Photo（写真の<u>メタデータ</u>） <span class="badge green">allow.owner()</span></b>
+      <div class="fields">
+        <code>s3Key</code>（必須・<code>media/{entity_id}/...</code>）／<code>imageHash</code>（参考）／
+        <code>contentType</code>／<code>sizeBytes</code>／<code>owner</code>（<b>再割当禁止</b>）<br>
+        ※ 画像の<b>実体</b>は S3 にあり、ここにあるのは「どこに置いたか」等の情報だけ
+      </div>
+    </div>
+  </div>
+
+  <h3>2. 認可（アクセス制限）の3つの層</h3>
+  <p>「他人のデータを見られないようにする」仕掛けは<b>3段構え</b>です。どれが<b>本当の守り</b>なのかを取り違えないことが重要です。</p>
+
+  <div class="branch">
+    <div class="branch-box info">
+      <b>① Data（DynamoDB）</b>
+      <code>allow.owner()</code><br>
+      レコードに自動で付く <code>owner</code> と、ログイン中の本人が一致するときだけ read/update/delete できる。
+      <span class="badge blue">工程1で設定</span>
+    </div>
+    <div class="branch-box info">
+      <b>② Storage（S3）</b>
+      <code>media/{identityId}/*</code><br>
+      パス自体を人ごとに分ける。<code>allow.entity('identity')</code> により他人の <code>media/&lt;別id&gt;/</code> には触れない。
+      <span class="badge blue">工程1で設定</span>
+    </div>
+    <div class="branch-box ok">
+      <b>③ 工程2 handler（★正本）</b>
+      呼び出し元の <code>cognitoIdentityId</code> と、渡された S3 key の
+      <code>media/{identityId}/</code> <b>プレフィックス一致</b>をサーバー側で検証する。
+      <span class="badge green">IDOR 防止の正本</span>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>⚠ 最重要の落とし穴</b>：<code>Report.photoKeys</code> と <code>Photo.s3Key</code> は
+    <b>クライアント（アプリ側）が自由に書き換えられるフィールド</b>です。
+    したがって<b>認可の判断材料にしてはいけません</b>（信頼境界の外側）。
+    これらは<b>画面表示と整合性チェック（多層防御）</b>のためだけに使い、
+    本当の防御は上図③のサーバー側プレフィックス検証で行います。
+  </div>
+
+  <div class="kids">
+    <strong>🔰 IDOR とは？</strong><br>
+    <b>I</b>nsecure <b>D</b>irect <b>O</b>bject <b>R</b>eference の略。
+    「他人のIDや他人のファイル名を勝手に指定して、他人のデータを見てしまう」攻撃のことです。
+    例：<code>media/<u>他人のID</u>/写真.jpg</code> と書いて送りつける、など。
+    だから「送られてきた文字列を信じず、サーバー側で本人のIDと突き合わせる」必要があります。
+  </div>
+
+  <h3>3. genStatus（生成状態）の遷移と、更新する担当</h3>
+  <p>日報がいまどの段階かを表す値です。<b>誰が更新するのか</b>が工程ごとに決まっています。</p>
+
+  <div class="states">
+    <span class="state st-ui">DRAFT<small>未生成（入力のみ）</small></span>
+    <span class="st-arrow">→<b>UI</b></span>
+    <span class="state st-ui">GENERATING<small>生成中（ボタン無効化）</small></span>
+    <span class="st-arrow">→<b>handler</b></span>
+    <span class="state st-handler">GENERATED<small>生成完了・未確定</small></span>
+    <span class="st-arrow">→<b>UI</b></span>
+    <span class="state st-ui">CONFIRMED<small>確定保存済み</small></span>
+  </div>
+  <div class="states">
+    <span class="st-arrow" style="margin-left:4px;">生成が失敗したら&nbsp;→<b>handler</b></span>
+    <span class="state st-fail">FAILED<small>生成失敗</small></span>
+  </div>
+  <div class="legend">
+    <span class="sw" style="background:var(--purple)"></span>紫＝<b>工程3（UI）</b>が更新（DRAFT／GENERATING／CONFIRMED）
+    <span class="sw" style="background:var(--green)"></span>緑＝<b>工程2（handler）</b>が更新（GENERATED／FAILED）
+  </div>
+  <p style="font-size:13.5px; color:var(--muted); margin-top:8px;">
+    handler が成功ドラフトと終端状態を永続化するので、<b>リロードや通信断のあとでも状態を復元できる</b>
+    （UI が <code>Report.genStatus</code>＋ドラフトを読み直す。工程3・工程5 TC-6）。
+    <b>工程1で用意するのは「この値を入れる箱」だけ</b>で、遷移ロジックは工程2／工程3 で実装します。
+  </p>
+
+  <h3>4. 作業の流れ（ステップ1〜5）</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-rail"><div class="flow-dot c-blue">1</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <b>Amplify Gen2 プロジェクトを作る</b>
+        <div class="desc"><code>npm create amplify@latest</code> で <code>amplify/</code> 一式を生成</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-rail"><div class="flow-dot c-blue">2</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <b><code>defineAuth</code>：メールでログインできるようにする</b>
+        <div class="desc">Cognito User Pool ＋ Identity Pool が生成される</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-rail"><div class="flow-dot c-purple">3</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <b><code>defineData</code>：Site／Report／Photo を定義する</b>
+        <div class="desc">全モデル <code>allow.owner()</code>＋<b>owner 再割当禁止</b>／<code>defaultAuthorizationMode: "userPool"</code></div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-rail"><div class="flow-dot c-green">4</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <b><code>defineStorage</code>：写真置き場＋コストの見張りを作る</b>
+        <div class="desc"><code>media/{entity_id}/*</code> 本人のみ／Block Public Access 確認／S3 Lifecycle 30日／AWS Budgets</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-rail"><div class="flow-dot c-amber">5</div></div>
+      <div class="flow-body">
+        <b><code>npx ampx sandbox</code> でデプロイ → 動作確認</b>
+        <div class="desc">CloudFormation 成功 → ログイン → 現場登録 → 写真アップロード。<span class="badge red">ここで A評価到達</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ステップ1 ============ -->
+<section>
+  <h2><span class="num">1</span>ステップ1：Amplify Gen2 プロジェクト作成</h2>
+
+  <h3>1-1. 前提ツール</h3>
+  <ul>
+    <li>Node.js 18 以上、npm</li>
+    <li>AWS アカウントと認証情報（<code>aws configure</code> 済み、または SSO プロファイル）</li>
+    <li><b>デフォルトリージョンを東京に設定</b>しておく（<code>~/.aws/config</code> の <code>region = ap-northeast-1</code>）。
+      <code>ampx sandbox</code> は<b>プロファイルのリージョン</b>にデプロイするため。</li>
+  </ul>
+
+  <h3>1-2. スキャフォールド作成</h3>
+<pre><code># ターミナル（プロジェクトを置きたい親ディレクトリで実行）
+npm create amplify@latest
+# → プロジェクト名などを対話で入力。amplify/ ディレクトリ一式が生成される</code></pre>
+
+  <p>生成される既定構成（Amplify Gen2 のパス規約）：</p>
+<pre><code>amplify/
+├── auth/resource.ts        # defineAuth（本手順ステップ2）
+├── data/resource.ts        # defineData（本手順ステップ3）
+├── backend.ts              # defineBackend（各リソースを束ねる）
+└── package.json など
+# storage/resource.ts は既定では未生成。ステップ4で新規作成する</code></pre>
+
+  <div class="note">
+    <strong>⚠ 差異注記①</strong>：<code>npm create amplify@latest</code> の既定スキャフォールドには
+    <b><code>amplify/storage/resource.ts</code> は含まれない</b>（<code>auth</code> と <code>data</code> のみ）。
+    工程1では storage を<b>新規に追加</b>する（ステップ4）。
+    proposal §4 の表は storage を前提としているが、<b>ファイルは手動追加が必要</b>。
+  </div>
+
+  <h3>1-3. 依存パッケージ</h3>
+  <p><code>npm create amplify@latest</code> が依存を導入する。追加で <code>npm install</code> する場合は
+  全社ルールに従い <code>--ignore-scripts</code> を付ける：</p>
+<pre><code>npm install --ignore-scripts</code></pre>
+</section>
+
+<!-- ============ ステップ2 ============ -->
+<section>
+  <h2><span class="num">2</span>ステップ2：<code style="font-size:16px">defineAuth</code>（メールログイン）</h2>
+
+<pre><code>// amplify/auth/resource.ts
+import { defineAuth } from "@aws-amplify/backend";
+
+/**
+ * メールアドレス＋パスワードでのログインを設定。
+ * 外部プロバイダ・電話番号ログインは PoC では使わない。
+ */
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+});</code></pre>
+
+  <ul>
+    <li><code>loginWith.email: true</code> により、<b>Cognito User Pool と Identity Pool</b> が生成される。</li>
+    <li>Identity Pool の <b>identity id</b> が、Storage の <code>{entity_id}</code>（ステップ4）と
+      Data の <code>owner</code>（ステップ3）の identity 単位に対応する。</li>
+  </ul>
+
+  <h3>「identity id」がどこに効くのか（対応関係）</h3>
+  <div class="branch">
+    <div class="branch-box info">
+      <b>Cognito Identity Pool</b>
+      ログインすると、その人だけの識別子 <code>identityId</code> が発行される（例：<code>ap-northeast-1:xxxx-xxxx</code>）
+    </div>
+    <div class="branch-box ok">
+      <b>→ Data の <code>owner</code></b>
+      レコードに自動で埋め込まれ、<code>allow.owner()</code> の照合に使われる（ステップ3）
+    </div>
+    <div class="branch-box ok">
+      <b>→ Storage の <code>{entity_id}</code></b>
+      アップロード時に <code>media/&lt;identityId&gt;/</code> へ置換され、人ごとにフォルダが分かれる（ステップ4）
+    </div>
+  </div>
+
+  <div class="kids">
+    <strong>🔰 entity_id とは？</strong><br>
+    「ログインした人ごとに1つ割り当てられる、かぶらない番号（識別子）」です。
+    <code>media/{entity_id}/*</code> と書いておくと、AWS が自動で「その人専用のフォルダ」に読み替えてくれます。
+    <b>他人のフォルダ名を書いても弾かれる</b>ので、人ごとに写真が分離されます。
+  </div>
+</section>
+
+<!-- ============ ステップ3 ============ -->
+<section>
+  <h2><span class="num">3</span>ステップ3：<code style="font-size:16px">defineData</code>（Site／Report／Photo）</h2>
+
+  <p><b>全モデルに <code>allow.owner()</code> を付与</b>し、<code>defaultAuthorizationMode</code> を
+  <code>userPool</code>（Cognito ユーザートークン署名）にする。
+  フィールドは proposal §3 の入力項目・生成ドラフト（<b>安全は「確認済」／「未確認」の2フィールドに分離</b>）・
+  生成状態・写真 key リスト（表示・整合性チェック用）を含める。</p>
+
+<pre><code>// amplify/data/resource.ts
+import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+
+const schema = a.schema({
+  // ── 現場マスタ ─────────────────────────────
+  Site: a
+    .model({
+      name: a.string().required(),      // 現場名
+      address: a.string(),              // 所在地（任意）
+      reports: a.hasMany("Report", "siteId"),
+      // owner を明示定義し、update を許可しないことで「owner 再割当」を禁止する
+      //（Amplify 公式: owner 認可の既定では既存レコードの owner を別ユーザーへ
+      //  再割当できるため、field-level authorization で塞ぐ）
+      owner: a
+        .string()
+        .authorization((allow) =&gt; [allow.owner().to(["read", "delete"])]),
+    })
+    .authorization((allow) =&gt; [allow.owner()]),
+
+  // ── 日報 ───────────────────────────────────
+  Report: a
+    .model({
+      // 関連
+      siteId: a.id(),
+      site: a.belongsTo("Site", "siteId"),
+
+      // 入力項目（proposal §3：現場・日付・工種・当日メモ・翌日予定）
+      // ⚠ reportDate は required のため、Report.create 時点で値が必要。
+      //   UI（工程3）は「日付＝当日を既定値」＋「Site 確定 → Report.create → 写真UI有効化」の
+      //   順序とし、写真先行で create が失敗する経路を作らない（作成順と必須項目の整合）。
+      //   さらに handler（工程2）でも日付の形式・許容範囲、memo/nextPlanInput の長さ上限を
+      //   サーバー側で検証する（UI だけに依存しない）。
+      reportDate: a.date().required(),  // 日付（UI は当日を既定値に設定）
+      workType: a.string(),             // 工種
+      memo: a.string(),                 // 当日メモ（作業実績の一次情報）
+      nextPlanInput: a.string(),        // 翌日予定（入力・生成の主根拠）
+
+      // 生成ドラフト保存先。確定保存は工程3のUIから update する
+      // （proposal §3：作業内容/進捗/安全・懸念/翌日の予定。安全は工程4の
+      //   機械集計のため「確認できた事項」と「画角外・未確認」を2フィールドに分離）
+      draftWork: a.string(),             // 作業内容
+      draftProgress: a.string(),         // 進捗
+      draftSafetyConfirmed: a.string(),  // 安全・懸念（画像内で確認できた事項）
+      draftSafetyUnconfirmed: a.string(),// 安全・懸念（画角外・未確認）
+      draftTomorrow: a.string(),         // 翌日の予定
+
+      // 生成状態：UI（工程3）が DRAFT / GENERATING / CONFIRMED を、
+      // handler（工程2）が生成完了・失敗時に GENERATED / FAILED を更新する
+      //（成功ドラフトと終端状態を handler が永続化し、リロード後の状態復元を可能にする）
+      genStatus: a.enum([
+        "DRAFT",       // 未生成（入力のみ）
+        "GENERATING",  // 生成中（ボタン無効化）
+        "GENERATED",   // 生成完了・未確定（handler が設定）
+        "CONFIRMED",   // 確定保存済み
+        "FAILED",      // 生成失敗（handler が設定）
+      ]),
+
+      // 写真 S3 key のリスト。工程3のアップロード確定時に保存する。
+      // ⚠ 表示・整合性チェック用であり、認可の正本ではない（owner が更新できる
+      //   フィールドのため信頼境界に置かない）。写真アクセス認可の正本は、工程2の
+      //   generateReport が行う「S3 key の media/{呼び出し元identityId}/ プレフィックス検証」。
+      photoKeys: a.string().array(),
+
+      // 冪等制御（reportId + imageSetHash + inputHash + promptVersion + modelId + schemaVersion）は
+      // Report には持たせず、工程2が CDK で作る専用 DynamoDB テーブル（lease 付き状態機械）で管理する。
+
+      photos: a.hasMany("Photo", "reportId"),
+
+      // owner 再割当禁止（Site と同じ field-level authorization）
+      owner: a
+        .string()
+        .authorization((allow) =&gt; [allow.owner().to(["read", "delete"])]),
+    })
+    .authorization((allow) =&gt; [allow.owner()]),
+
+  // ── 写真（S3 オブジェクトのメタデータ） ──────
+  Photo: a
+    .model({
+      reportId: a.id(),
+      report: a.belongsTo("Report", "reportId"),
+      s3Key: a.string().required(),  // media/{entity_id}/... の S3 キー
+      imageHash: a.string(),         // 参考メタデータ（任意）。冪等キーの正は工程2の Lambda が実バイトから算出する imageSetHash
+      contentType: a.string(),       // MIME（サーバ側検証にも使用：工程2）
+      sizeBytes: a.integer(),        // サイズ（枚数・サイズ制御用）
+
+      // owner 再割当禁止（Site / Report と同じ field-level authorization）
+      owner: a
+        .string()
+        .authorization((allow) =&gt; [allow.owner().to(["read", "delete"])]),
+    })
+    .authorization((allow) =&gt; [allow.owner()]),
+});
+
+export type Schema = ClientSchema&lt;typeof schema&gt;;
+
+export const data = defineData({
+  schema,
+  authorizationModes: {
+    // 全リクエストを Cognito ユーザートークンで署名（API key は使わない）
+    defaultAuthorizationMode: "userPool",
+  },
+});</code></pre>
+
+  <h3>設計ノート</h3>
+  <ul>
+    <li><code>allow.owner()</code> は各レコードに <code>owner</code> フィールド（作成者の identity claim）を自動付与し、
+      <b>作成者本人のみ</b> create/read/update/delete 可能にする。</li>
+    <li><b>owner の再割当禁止</b>：Amplify 公式ドキュメントのとおり、owner 認可の既定では
+      <b>既存レコードの owner を別ユーザーへ再割当できる</b>。
+      本スキーマは owner フィールドを明示し <code>allow.owner().to(["read", "delete"])</code>（<b>update を含めない</b>）の
+      field-level authorization で再割当を禁止する。
+      工程2 の Lambda はこの不変性を前提に <code>Report.owner</code> を認可判定に使う。
+      再割当が実際に拒否されることは<b>工程5 TC-1 の否定テスト</b>で検証する（sandbox デプロイ時に実挙動も確認）。</li>
+    <li><code>defaultAuthorizationMode: "userPool"</code> により <b>API key モードを無効化</b>。
+      <code>allow.publicApiKey()</code>／<code>allow.guest()</code>／モデルへの <code>allow.authenticated()</code> は
+      <b>使用しない</b>（工程2 の custom query のみ identityPool 認可を使う）。</li>
+    <li>S3 実体は Storage（ステップ4）が持ち、<code>Photo</code> は<b>メタデータ</b>（S3 キー・ハッシュ等）を保持する。
+      <code>Photo.s3Key</code>／<code>Report.photoKeys</code> は<b>クライアントが書けるため認可の正本にしない</b>。
+      工程2 の <code>generateReport</code> は「呼び出し元の <code>cognitoIdentityId</code> と S3 key のプレフィックス一致」＋
+      「<code>Report.owner</code> の sub 照合」で IDOR を防止する。</li>
+  </ul>
+
+  <div class="callout">
+    <b>⚠ ここが一番の落とし穴：owner の再割当</b><br>
+    <code>allow.owner()</code> を書いただけだと、<b>「このレコードの持ち主を別人に付け替える」更新が通ってしまいます</b>。
+    つまり、他人が自分のIDに書き換えて日報を乗っ取れる余地が残ります。<br>
+    そこで <code>owner</code> フィールドを<b>自分で明示的に宣言</b>し、権限を <code>["read", "delete"]</code> だけに絞って
+    <b><code>update</code> を外す</b>のが今回の対策です。<b>3モデルすべてに必要</b>です。
+  </div>
+
+  <div class="note">
+    <strong>⚠ 差異注記②</strong>：冪等キーは proposal §6 で
+    「<code>reportId + imageSetHash + inputHash + promptVersion + modelId + schemaVersion</code>」と定義
+    （<code>inputHash</code> はテキスト入力のサーバー側正規化ハッシュ。
+    <b>写真が同一でもメモ・翌日予定を変更すれば新規生成される</b>）。
+    <code>reportId</code> は <code>Report</code> の <code>id</code>（自動採番）に相当する。
+    冪等制御用のキーは <code>Report</code> モデルには保持せず、
+    <b>工程2 が CDK で作る専用 DynamoDB テーブル <code>GenerationJobs</code></b>
+    （合成キー＋<code>leaseExpiresAt</code>／<code>attemptId</code>／<code>attemptCount</code> を持つ lease 付き状態機械）で管理する。
+    合成・二重実行防止・再試行回復ロジックは<b>工程2</b>で実装する。
+  </div>
+
+  <div class="kids">
+    <strong>🔰 冪等（べきとう）って？</strong><br>
+    「同じ操作を何回やっても結果が1回分にしかならない」性質のこと。
+    ボタンを連打しても AI 生成が何度も走って課金が増えたりしないように、
+    「同じ入力なら同じ結果を返す（＝作り直さない）」仕組みを工程2 で入れます。
+    <b>工程1ではまだ作りません</b>。
+  </div>
+</section>
+
+<!-- ============ ステップ4 ============ -->
+<section>
+  <h2><span class="num">4</span>ステップ4：<code style="font-size:16px">defineStorage</code>（media/{entity_id}/* 本人のみ）</h2>
+
+  <p><code>amplify/storage/resource.ts</code> を<b>新規作成</b>する。</p>
+
+<pre><code>// amplify/storage/resource.ts
+import { defineStorage } from "@aws-amplify/backend";
+
+/**
+ * 現場写真ストレージ。
+ * media/{entity_id}/* を、そのユーザー本人（identity）だけが read/write/delete できる。
+ * {entity_id} は予約トークンで、アップロード時にユーザーの identity id に置換される。
+ */
+export const storage = defineStorage({
+  name: "genbalogMedia",
+  access: (allow) =&gt; ({
+    "media/{entity_id}/*": [
+      allow.entity("identity").to(["read", "write", "delete"]),
+    ],
+  }),
+});</code></pre>
+
+  <ul>
+    <li><code>allow.entity('identity')</code>：identity id が一致する<b>本人のみ</b>許可。
+      identity 単位でパスを分離するため、他ユーザーの <code>media/&lt;別id&gt;/*</code> にはアクセスできない。</li>
+    <li><code>to(['read','write','delete'])</code>：本人に読み書き削除を許可。
+      <b>guest／public エントリは書かない</b>。</li>
+  </ul>
+
+  <h3>4-1. <code>backend.ts</code> へ登録</h3>
+<pre><code>// amplify/backend.ts
+import { defineBackend } from "@aws-amplify/backend";
+import { auth } from "./auth/resource";
+import { data } from "./data/resource";
+import { storage } from "./storage/resource";
+
+export const backend = defineBackend({
+  auth,
+  data,
+  storage,
+});</code></pre>
+
+  <h3>4-2. Block Public Access の確認方法</h3>
+  <p>Amplify Gen2 の <code>defineStorage</code> が生成する S3 バケットは、
+  <b>既定でパブリックアクセスをブロック</b>する（バケットポリシーによる公開はせず、Cognito／IAM 経由のみ許可）。
+  デプロイ後に念のため確認する：</p>
+
+<pre><code># デプロイ後、バケット名は amplify_outputs.json の storage.bucket_name で確認
+aws s3api get-public-access-block \
+  --bucket &lt;生成された bucket 名&gt; \
+  --region ap-northeast-1
+# 期待値：BlockPublicAcls / IgnorePublicAcls / BlockPublicPolicy / RestrictPublicBuckets が全て true</code></pre>
+
+  <div class="ok-note">
+    <strong>✅ こう表示されればOK</strong>：4項目すべてが <code>true</code>。<br>
+    S3 コンソール → 対象バケット →「アクセス許可」タブ →「ブロックパブリックアクセス」が
+    <b>全項目オン</b>であることでも確認可（<b>A評価の証拠スクリーンショット</b>に使える）。
+  </div>
+
+  <div class="note">
+    <strong>⚠ 差異注記③</strong>：<code>defineStorage</code> の既定パブリックアクセスブロックは
+    <b>Amplify のマネージド挙動</b>。<code>get-public-access-block</code> の出力（全 true）を<b>証拠として保存</b>し、明示確認すること。
+  </div>
+
+  <h3>4-3. 初期コストガードレール（S3 Lifecycle・AWS Budgets）</h3>
+  <p>proposal §5 のコスト試算は「写真30日保持・予算監視あり」が前提。
+  <b>適用前は写真が無期限保持・予算通知なしとなり試算前提を満たさない</b>ため、
+  <b>sandbox 初回デプロイの時点（＝本工程）</b>で設定する。工程6 では実測に基づき予算額・閾値を見直す。</p>
+
+<pre><code>// amplify/backend.ts（4-1 の defineBackend の後に追記）
+import { Duration } from "aws-cdk-lib";
+import { CfnBudget } from "aws-cdk-lib/aws-budgets";
+
+// ── (1) S3 Lifecycle：写真30日expiration + 未完了 multipart abort（1日）──
+//   proposal §6「S3 写真は Lifecycle で短期 expiration（例：30日）」に対応
+const mediaBucket = backend.storage.resources.bucket;
+mediaBucket.addLifecycleRule({
+  id: "genbalog-photo-retention",
+  enabled: true,
+  prefix: "media/",                                      // 写真の格納パス（proposal §4）
+  expiration: Duration.days(30),                         // 30日で自動削除
+  abortIncompleteMultipartUploadAfter: Duration.days(1), // 未完了アップロードを1日でabort
+});
+
+// ── (2) AWS Budgets：月次$10予算 + ACTUAL 50/80/100% + FORECASTED 100% メール通知 ──
+//   proposal §6「コスト監視」。反映は1日最大3回でリアルタイムではない点に注意
+const costStack = backend.createStack("cost-guardrails");
+const NOTIFY_EMAIL = "team@example.com"; // ← チームのメールに置換
+
+new CfnBudget(costStack, "GenbaLogMonthlyBudget", {
+  budget: {
+    budgetName: "GenbaLog-monthly",
+    budgetType: "COST",
+    timeUnit: "MONTHLY",
+    budgetLimit: { amount: 10, unit: "USD" },
+  },
+  notificationsWithSubscribers: [
+    { type: "ACTUAL", th: 50 },
+    { type: "ACTUAL", th: 80 },
+    { type: "ACTUAL", th: 100 },
+    { type: "FORECASTED", th: 100 },
+  ].map((t) =&gt; ({
+    notification: {
+      notificationType: t.type,
+      comparisonOperator: "GREATER_THAN",
+      threshold: t.th,
+      thresholdType: "PERCENTAGE",
+    },
+    subscribers: [{ subscriptionType: "EMAIL", address: NOTIFY_EMAIL }],
+  })),
+});</code></pre>
+
+  <div class="note">
+    <strong>⚠ 忘れずに</strong>：<code>NOTIFY_EMAIL</code> の <code>team@example.com</code> は<b>必ずチームのメールに置換</b>する。
+    置換しないと予算超過の通知が誰にも届かない。
+  </div>
+
+  <ul>
+    <li><b>コンソールで設定する場合</b>：
+      S3 → 対象バケット → Management → Lifecycle rules（prefix <code>media/</code>・30日 expiration・multipart abort 1日）／
+      Billing → Budgets → Create budget（Monthly / $10 / 閾値 50・80・100%＋Forecasted 100%）。</li>
+    <li>CloudWatch <b>Logs retention（7〜14日）は <code>generateReport</code> Lambda のロググループに対する設定のため
+      <span class="badge purple">工程2</span>で行う</b>（<code>03_step2_ai.md</code> ステップ2）。</li>
+    <li>設定確認（Lifecycle が付いたこと・Budgets が作られたこと）のスクリーンショットを
+      <b>S評価の証拠</b>として保存する（<code>process.md</code> §2「AWS Budgets 設定済み」）。</li>
+  </ul>
+
+  <div class="kids">
+    <strong>🔰 なぜ最初に「お金の見張り」を付けるの？</strong><br>
+    クラウドは使った分だけ課金され、<b>気づいたときには高額</b>ということが起きます。
+    ・<b>S3 Lifecycle</b>＝「30日たった写真は自動で消す」＝置きっぱなしで料金が増え続けるのを防ぐ。<br>
+    ・<b>AWS Budgets</b>＝「月$10 を超えそうならメールで知らせる」＝異常な使われ方に早く気づける。<br>
+    ⚠ Budgets の集計反映は<b>1日最大3回</b>でリアルタイムではないため、「気づくのが数時間遅れる」前提で使います。
+  </div>
+</section>
+
+<!-- ============ ステップ5 ============ -->
+<section>
+  <h2><span class="num">5</span>ステップ5：<code style="font-size:16px">npx ampx sandbox</code> デプロイと動作確認</h2>
+
+  <h3>5-1. sandbox 起動（東京リージョン）</h3>
+<pre><code># プロファイルの region が ap-northeast-1 ならそのまま
+npx ampx sandbox
+
+# 明示的に東京へデプロイする場合（環境変数で指定）
+AWS_REGION=ap-northeast-1 npx ampx sandbox</code></pre>
+
+  <ul>
+    <li><code>ampx sandbox</code> は AWS プロファイルのリージョンにデプロイする。
+      <b>CLI 専用のリージョンフラグは無く</b>、<b><code>AWS_REGION</code> 環境変数</b>で上書きする（AWS 公式 CLI commands ドキュメント準拠）。</li>
+    <li>起動するとファイル監視の<b>ホットスワップ状態</b>になり、<code>amplify_outputs.json</code> が生成される。</li>
+  </ul>
+
+  <h3>5-2. CloudFormation デプロイ成功の確認</h3>
+  <ul>
+    <li>ターミナルに各リソース（auth／data／storage）のデプロイ完了が表示され、
+      <code>amplify_outputs.json</code> が更新されれば成功。</li>
+    <li>コンソール確認：CloudFormation → sandbox のスタック
+      （<code>amplify-&lt;app&gt;-&lt;user&gt;-sandbox-...</code>）が <b>CREATE_COMPLETE / UPDATE_COMPLETE</b>。</li>
+  </ul>
+
+<pre><code># CLI でスタック状態を確認する例
+aws cloudformation describe-stacks \
+  --region ap-northeast-1 \
+  --query "Stacks[?contains(StackName, 'sandbox')].[StackName,StackStatus]" \
+  --output table</code></pre>
+
+  <div class="ok-note">
+    <strong>✅ ここでゲート通過</strong>：この時点で <code>process.md</code> <b>A評価</b>の到達条件
+    「<b>sandbox デプロイ成功（CloudFormation 成功）</b>」を満たす。
+  </div>
+
+  <h3>5-3. ログイン → 現場登録 → 写真アップロードの動作確認</h3>
+  <p>最小の確認フロー（<b>フロント統合は工程3</b> だが、A評価は<b>どれか1つ</b>が動けば良い）。
+  Amplify クライアント（<code>aws-amplify</code>）を使った確認スニペット例：</p>
+
+<pre><code>// 確認用（例：一時的な Node スクリプト / Expo アプリ内のデバッグ画面。フロント統合は工程3）
+// amplify_outputs.json を読み込んで Amplify.configure 済みであること
+import { generateClient } from "aws-amplify/data";
+import { uploadData } from "aws-amplify/storage";
+import { getCurrentUser } from "aws-amplify/auth";
+import type { Schema } from "@/amplify/data/resource";
+
+const client = generateClient&lt;Schema&gt;();
+
+// (1) Cognito ログイン後、本人確認
+const user = await getCurrentUser();
+console.log("[GenbaLog] signed in:", user.userId);
+
+// (2) 現場登録（Site 作成）
+const { data: site } = await client.models.Site.create({
+  name: "デモ現場A",
+  address: "東京都〇〇",
+});
+console.log("[GenbaLog] site:", site?.id);
+
+// (3) 写真アップロード（media/{entity_id}/ 配下へ）
+//     path のコールバックで {entity_id} を identityId に解決させる
+const file = /* File オブジェクト */ null as unknown as File;
+const result = await uploadData({
+  path: ({ identityId }) =&gt; `media/${identityId}/${file.name}`,
+  data: file,
+  options: { contentType: file.type },
+}).result;
+console.log("[GenbaLog] uploaded key:", result.path);</code></pre>
+
+  <ul>
+    <li>ログイン UI は <b>Amplify UI の <code>Authenticator</code></b> を使うと最短（メール＋パスワード）。</li>
+    <li>アップロード後、S3 保存を確認：</li>
+  </ul>
+
+<pre><code># 対象 identity 配下にオブジェクトがあるか
+aws s3 ls "s3://&lt;bucket 名&gt;/media/" --recursive --region ap-northeast-1</code></pre>
+
+  <ul>
+    <li>他ユーザーの identity パスへアクセスできないこと（<b>否定確認</b>）は
+      <b>工程5 の異常系</b>で本格検証するが、本工程でも「別 identity パス指定が拒否されること」を
+      軽く確認しておくとよい。</li>
+  </ul>
+</section>
+
+<!-- ============ ステップ6 ============ -->
+<section>
+  <h2><span class="num">6</span>ステップ6：証拠の取り方（process.md A評価用）</h2>
+
+  <p><code>process.md</code> の A評価は「<b>動作画面のスクリーンショット または CloudWatch ログ</b>」を証拠とする。以下を取得・保存する：</p>
+
+  <ol>
+    <li><b>CloudFormation 成功のスクリーンショット</b>：sandbox スタックが <code>*_COMPLETE</code>。</li>
+    <li><b>S3 バケットの Block Public Access がオンのスクリーンショット</b>（ステップ4-2）。</li>
+    <li><b>ログイン成功画面</b>（Authenticator 認証後の画面）。</li>
+    <li><b>現場登録の結果</b>：DynamoDB コンソールで <code>Site</code> テーブルに本人 <code>owner</code> 付きレコードが1件、
+      または上記スニペットの <code>console.log</code> 出力。</li>
+    <li><b>写真アップロードの S3 保存確認</b>：<code>aws s3 ls</code> の出力、
+      または S3 コンソールで <code>media/&lt;identityId&gt;/</code> にオブジェクト表示。</li>
+    <li><b>CloudWatch ログ</b>（任意）：AppSync のリクエストログ等。</li>
+  </ol>
+
+  <div class="note">
+    <strong>⚠ ログの注意</strong>：proposal §9 の「ログに記録する項目」に従い、
+    <b>画像・プロンプト本文は残さない</b>方針は<b>工程2 のログ設計</b>で適用する。
+    工程1では S3／DynamoDB の保存確認が主証拠。
+  </div>
+</section>
+
+<!-- ============ 完了条件チェックリスト ============ -->
+<section>
+  <h2><span class="num green">✓</span>完了条件チェックリスト（proposal §9 工程1 と1対1）</h2>
+
+  <p style="font-size:13.5px; color:var(--muted);">
+    <b>このHTML上でチェックを入れながら進捗管理できます（localStorage 保存）。</b>
+    ブラウザを閉じても状態は残ります。
+  </p>
+
+  <div class="check-toolbar">
+    <span class="check-progress" id="progress-main">0 / 10</span>
+    <div class="progress-bar"><span id="progress-bar-main" style="width:0%"></span></div>
+    <button class="reset-btn" type="button" onclick="resetChecks()">全リセット</button>
+  </div>
+
+  <ul class="checklist" data-check-group="done">
+    <li><input type="checkbox" id="s1-1"><label for="s1-1"><b><code>Site</code>／<code>Report</code>／<code>Photo</code> を <code>allow.owner()</code> で定義</b><br><span style="color:var(--muted);font-size:13px">guest／public・API key・モデルへの <code>allow.authenticated()</code> 不使用（ステップ3）</span></label></li>
+    <li><input type="checkbox" id="s1-2"><label for="s1-2"><b>owner フィールドを明示定義し、field-level authorization（<code>to(["read","delete"])</code>）で owner 再割当を禁止</b><br><span style="color:var(--muted);font-size:13px">3モデルすべてに必要。否定テストの本番は工程5 TC-1（ステップ3）</span></label></li>
+    <li><input type="checkbox" id="s1-3"><label for="s1-3"><b>S3 を <code>media/{entity_id}/*</code> で本人分離</b><br><span style="color:var(--muted);font-size:13px"><code>allow.entity('identity').to(['read','write','delete'])</code>（ステップ4）</span></label></li>
+    <li><input type="checkbox" id="s1-4"><label for="s1-4"><b>Block Public Access 有効</b>を <code>get-public-access-block</code>（<b>全 true</b>）で確認<br><span style="color:var(--muted);font-size:13px">出力を証拠として保存（ステップ4-2・差異注記③）</span></label></li>
+    <li><input type="checkbox" id="s1-5"><label for="s1-5"><b>S3 Lifecycle（<code>media/</code> 30日 expiration＋multipart abort 1日）を設定</b><br><span style="color:var(--muted);font-size:13px">ステップ4-3。写真の置きっぱなし課金を防ぐ</span></label></li>
+    <li><input type="checkbox" id="s1-6"><label for="s1-6"><b>AWS Budgets（月次予算＋ACTUAL 50/80/100%・FORECASTED 100% 通知）を設定</b><br><span style="color:var(--muted);font-size:13px">ステップ4-3。<b>S評価の必須条件</b>。<code>NOTIFY_EMAIL</code> の置換を忘れない</span></label></li>
+    <li><input type="checkbox" id="s1-7"><label for="s1-7"><b><code>npx ampx sandbox</code> デプロイ成功（CloudFormation 成功）</b><br><span style="color:var(--muted);font-size:13px">スタックが <code>*_COMPLETE</code>（ステップ5-2）<span class="badge red">A評価 到達条件</span></span></label></li>
+    <li><input type="checkbox" id="s1-8"><label for="s1-8"><b>Cognito ログインが動く</b><br><span style="color:var(--muted);font-size:13px">Authenticator でメール＋パスワード認証（ステップ5-3 (1)）<span class="badge red">A評価 到達条件</span></span></label></li>
+    <li><input type="checkbox" id="s1-9"><label for="s1-9"><b>現場登録（<code>Site</code> レコード作成）ができる</b><br><span style="color:var(--muted);font-size:13px">DynamoDB に本人 <code>owner</code> 付きで1件（ステップ5-3 (2)）</span></label></li>
+    <li><input type="checkbox" id="s1-10"><label for="s1-10"><b>写真アップロード（S3 保存確認）ができる</b><br><span style="color:var(--muted);font-size:13px"><code>media/&lt;identityId&gt;/</code> にオブジェクトが見える（ステップ5-3 (3)）<span class="badge red">A評価 到達条件</span></span></label></li>
+  </ul>
+</section>
+
+<!-- ============ process.md ゲート対応 ============ -->
+<section>
+  <h2><span class="num">表</span>process.md ゲート対応（A評価に直結）</h2>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>process.md A評価 到達条件</th><th>本手順の該当ステップ</th><th>証拠</th></tr>
+    <tr><td>sandbox デプロイ成功（CloudFormation 成功）</td><td>ステップ5-2</td><td>CFn スタック <code>*_COMPLETE</code> のスクショ</td></tr>
+    <tr><td>ログインが動く</td><td>ステップ5-3 (1)</td><td>ログイン成功画面</td></tr>
+    <tr><td>写真アップロード（S3保存）が動く</td><td>ステップ5-3 (3)</td><td><code>aws s3 ls</code> 出力 / S3 コンソール</td></tr>
+  </table>
+  </div>
+
+  <h3>OR ゲート図：どれか1つでA到達</h3>
+  <div class="gate-or">
+    <div class="gate-cards">
+      <div class="gate-card">
+        <b>① sandbox デプロイ成功</b>
+        CloudFormation スタックが <code>*_COMPLETE</code>
+        <div class="ev">証拠：CFn 画面のスクショ</div>
+      </div>
+      <div class="gate-card">
+        <b>② ログインが動く</b>
+        Cognito でメール認証が通る
+        <div class="ev">証拠：認証後画面のスクショ</div>
+      </div>
+      <div class="gate-card">
+        <b>③ 写真アップロードが動く</b>
+        <code>media/&lt;identityId&gt;/</code> に保存される
+        <div class="ev">証拠：<code>aws s3 ls</code> 出力</div>
+      </div>
+    </div>
+    <div class="or-mark">── OR（いずれか1つでよい）──</div>
+    <div class="gate-goal">
+      <b>🎯 process.md A評価 到達</b><br>
+      <span style="font-size:13px; color:var(--muted);">本手順は①②③を<b>同時に満たす</b>構成なので、通しで実施すれば確実に到達します（process.md §2）</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 失敗時の代替 ============ -->
+<section>
+  <h2><span class="num red">!</span>失敗時の代替（proposal §9 工程1「失敗時」準拠）</h2>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>症状</th><th>原因と対処</th></tr>
+    <tr>
+      <td><b>認可が意図通り効かない<br>／デプロイエラー</b></td>
+      <td>認可規則を <b>owner 明示</b>（<code>allow.owner()</code>）に修正し再デプロイ。
+        <code>allow.authenticated()</code> や <code>allow.publicApiKey()</code> が混入していないか
+        <code>data/resource.ts</code> を確認。<code>defaultAuthorizationMode: "userPool"</code> を再確認。</td>
+    </tr>
+    <tr>
+      <td><b>CloudFormation ロールバック</b></td>
+      <td>sandbox のエラーログでリソース名を特定。<b>命名衝突・IAM 不足</b>が多い。
+        <code>npx ampx sandbox delete</code> で作り直して再デプロイ。</td>
+    </tr>
+    <tr>
+      <td><b>写真アップロードが 403</b></td>
+      <td><code>media/{entity_id}/*</code> のパスと、アップロード時 <code>path</code> の <code>identityId</code> 解決が
+        一致しているか、<b>ログイン済み（identity 発行済み）</b>かを確認。</td>
+    </tr>
+    <tr>
+      <td><b>リージョンずれ</b></td>
+      <td><code>amplify_outputs.json</code> の <code>aws_region</code> が <code>ap-northeast-1</code> か確認。
+        異なる場合は <code>AWS_REGION=ap-northeast-1 npx ampx sandbox</code> で再実行。</td>
+    </tr>
+  </table>
+  </div>
+</section>
+
+<!-- ============ 他工程への引き継ぎ ============ -->
+<section>
+  <h2><span class="num purple">◆</span>他工程への引き継ぎ事項</h2>
+
+  <h3>→ 工程2（<code>generateReport</code>）へ</h3>
+  <ul>
+    <li><b>identityPool（IAM）認可</b>で実装し、<b>IDOR 検証の正本は
+      「呼び出し元 <code>cognitoIdentityId</code> と S3 key の <code>media/{identityId}/</code> プレフィックス一致」</b>とする。</li>
+    <li>本工程の <code>Report.owner</code>（<b>再割当禁止済み</b>）は <b>sub 照合</b>に、
+      <code>Report.photoKeys</code> は<b>整合性チェック（多層防御）</b>に使う。</li>
+    <li>生成ドラフト（<code>draftWork</code>／<code>draftProgress</code>／<code>draftSafetyConfirmed</code>／
+      <code>draftSafetyUnconfirmed</code>／<code>draftTomorrow</code>）は
+      <b>成功時に handler が Report へ永続化</b>する。</li>
+    <li>冪等制御は工程2 が CDK で作る<b>専用 DynamoDB テーブル</b>
+      （<code>reportId + imageSetHash + inputHash + promptVersion + modelId + schemaVersion</code> をキーとする lease 付き状態機械）で管理する
+      （<b>Report には持たせない</b>）。</li>
+    <li><b>生成入力（<code>reportDate</code> の形式・許容範囲、<code>memo</code>／<code>nextPlanInput</code> の長さ上限）は
+      handler でもサーバー検証</b>する（<b>UI 検証だけに依存しない</b>）。</li>
+    <li>Bedrock（モデルID <code>jp.anthropic.claude-haiku-4-5-20251001-v1:0</code> ／ <code>ap-northeast-1</code>）の
+      IAM 付与は工程2 の <code>backend.ts</code> CDK エスケープハッチで実施（<b>本工程では行わない</b>）。
+      <b>推論プロファイルのため、IAM 許可は「推論プロファイル ARN」＋「東京・大阪の foundation-model ARN」の両方が必要</b>（工程0の知見）。</li>
+    <li>CloudWatch <b>Logs retention（7〜14日）</b>は工程2 で <code>generateReport</code> のロググループに設定する。</li>
+  </ul>
+
+  <h3>→ 工程3（UI）へ</h3>
+  <ul>
+    <li><b><code>genStatus</code> の更新責任</b>：
+      <span class="badge purple">工程3（UI）</span> が <code>DRAFT</code>／<code>GENERATING</code>／<code>CONFIRMED</code>、
+      <span class="badge green">工程2（handler）</span> が <code>GENERATED</code>／<code>FAILED</code> を更新する。</li>
+    <li>リロード・切断後は UI が <code>Report.genStatus</code>＋ドラフトを読み直して<b>状態復元</b>する
+      （工程3・工程5 TC-6）。</li>
+    <li><b>作成順の制約</b>：<code>reportDate</code> は必須なので、UI は
+      「日付＝当日を既定値」＋「<b>Site 確定 → Report.create → 写真UI有効化</b>」の順序とし、
+      <b>写真先行で create が失敗する経路を作らない</b>。</li>
+  </ul>
+
+  <h3>→ 工程5／工程6 へ</h3>
+  <ul>
+    <li><b>工程5</b>：owner 再割当が実際に拒否されることを <b>TC-1 の否定テスト</b>で検証する。
+      他ユーザーの identity パスへのアクセス拒否も工程5 の異常系で本格検証。</li>
+    <li><b>工程6</b>：S3 Lifecycle・AWS Budgets は本工程で設定済み（ステップ4-3）。
+      工程6 は<b>実測に基づく見直し・有効性確認</b>を行う。</li>
+  </ul>
+</section>
+
+<footer>GenbaLog 実装手順書シリーズ ── 02_step1_data.md より生成 ／ チェック状態はこのブラウザに自動保存されます</footer>
+</div>
+
+<script>
+  // ===== 対話式チェックボックス：localStorage 保存・進捗表示 =====
+  (function () {
+    var STORAGE_KEY = "genbalog-step1-checks";
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      } catch (e) {
+        return {};
+      }
+    }
+    function saveState(state) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) { /* localStorage 無効環境では保存スキップ */ }
+    }
+
+    var boxes = Array.prototype.slice.call(
+      document.querySelectorAll('.checklist input[type="checkbox"]')
+    );
+
+    function reflect(cb) {
+      var li = cb.closest("li");
+      if (li) li.classList.toggle("done", cb.checked);
+    }
+
+    function updateProgress() {
+      var group = document.querySelector('.checklist[data-check-group="done"]');
+      if (!group) return;
+      var items = group.querySelectorAll('input[type="checkbox"]');
+      var total = items.length;
+      var checked = group.querySelectorAll('input[type="checkbox"]:checked').length;
+      var label = document.getElementById("progress-main");
+      var bar = document.getElementById("progress-bar-main");
+      if (label) label.textContent = checked + " / " + total;
+      if (bar) bar.style.width = (total ? (checked / total * 100) : 0) + "%";
+    }
+
+    // 復元
+    var state = loadState();
+    boxes.forEach(function (cb) {
+      if (state[cb.id]) cb.checked = true;
+      reflect(cb);
+      cb.addEventListener("change", function () {
+        reflect(cb);
+        var s = loadState();
+        if (cb.checked) { s[cb.id] = true; } else { delete s[cb.id]; }
+        saveState(s);
+        updateProgress();
+      });
+    });
+    updateProgress();
+
+    // 全リセット
+    window.resetChecks = function () {
+      boxes.forEach(function (cb) {
+        cb.checked = false;
+        reflect(cb);
+      });
+      saveState({});
+      updateProgress();
+    };
+  })();
+</script>
+</body>
+</html>
