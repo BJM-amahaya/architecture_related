@@ -1,0 +1,28 @@
+
+gitignore
+# 依存ライブラリ（npm install で再生成できる）
+node_modules/
+
+# 秘密情報（AWS認証など。絶対にコミットしない）
+.env
+.env.*
+
+# ビルド生成物
+dist/
+build/
+*.tsbuildinfo
+
+# ログ
+npm-debug.log*
+
+# macOS
+.DS_Store
+
+# Amplify Gen2（今後導入時）
+.amplify/
+amplify_outputs.json
+images/images.jpeg
+images/images (1).jpeg
+
+# ※ RESULTS.md は工程0の実測値の「正本」なので、あえて管理対象にしている
+#    （以前は除外していたが 2026-08-18 に解除）
